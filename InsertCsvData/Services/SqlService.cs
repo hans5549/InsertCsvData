@@ -48,7 +48,7 @@ public class SqlService
         if (metadata == null) return -1;
 
         var sql = @"
-                INSERT INTO CveMetadata (CveId, AssignerOrgId, AssignerShortName, State, DateReserved, DatePublished, DateUpdated)
+                INSERT INTO [CveMetadata] ([CveId], [AssignerOrgId], [AssignerShortName], [State], [DateReserved], [DatePublished], [DateUpdated])
                 VALUES (@CveId, @AssignerOrgId, @AssignerShortName, @State, @DateReserved, @DatePublished, @DateUpdated);
                 SELECT SCOPE_IDENTITY();";
 
@@ -67,7 +67,7 @@ public class SqlService
     private int InsertRootCve(SqlConnection connection, Cve.RootCve cveData, int cveMetadataId)
     {
         var sql = @"
-                INSERT INTO RootCve (DataType, DataVersion, CveMetadataId)
+                INSERT INTO [RootCve] ([DataType], [DataVersion], [CveMetadataId])
                 VALUES (@DataType, @DataVersion, @CveMetadataId);
                 SELECT SCOPE_IDENTITY();";
 
@@ -82,7 +82,7 @@ public class SqlService
     private int InsertContainers(SqlConnection connection, int rootCveId)
     {
         var sql = @"
-                INSERT INTO Containers (RootCveId)
+                INSERT INTO [Containers] ([RootCveId])
                 VALUES (@RootCveId);
                 SELECT SCOPE_IDENTITY();";
 
@@ -96,7 +96,7 @@ public class SqlService
         var providerMetadataId = InsertProviderMetadata(connection, cna.ProviderMetadata);
 
         var sql = @"
-                INSERT INTO CnaContainer (ProviderMetadataId, Title)
+                INSERT INTO [CnaContainer] ([ProviderMetadataId], [Title])
                 VALUES (@ProviderMetadataId, @Title);
                 SELECT SCOPE_IDENTITY();";
 
@@ -108,7 +108,7 @@ public class SqlService
 
     private void UpdateContainersCnaId(SqlConnection connection, int containersId, int cnaId)
     {
-        var sql = "UPDATE Containers SET CnaId = @CnaId WHERE ContainersId = @ContainersId;";
+        var sql = "UPDATE [Containers] SET [CnaId] = @CnaId WHERE [ContainersId] = @ContainersId;";
         using var command = new SqlCommand(sql, connection);
         command.Parameters.AddWithValue("@CnaId", cnaId);
         command.Parameters.AddWithValue("@ContainersId", containersId);
@@ -120,7 +120,7 @@ public class SqlService
         if (metadata == null) return -1;
 
         var sql = @"
-                INSERT INTO ProviderMetadata (OrgId, ShortName, DateUpdated)
+                INSERT INTO [ProviderMetadata] ([OrgId], [ShortName], [DateUpdated])
                 VALUES (@OrgId, @ShortName, @DateUpdated);
                 SELECT SCOPE_IDENTITY();";
 
@@ -179,7 +179,7 @@ public class SqlService
     private int InsertAffected(SqlConnection connection, Cve.Affected affected, int cnaId)
     {
         var sql = @"
-                INSERT INTO Affected (CnaId, Vendor, Product)
+                INSERT INTO [Affected] ([CnaId], [Vendor], [Product])
                 VALUES (@CnaId, @Vendor, @Product);
                 SELECT SCOPE_IDENTITY();";
 
@@ -193,7 +193,7 @@ public class SqlService
     private void InsertVersion(SqlConnection connection, Cve.Version version, int affectedId)
     {
         var sql = @"
-                INSERT INTO Versions (AffectedId, VersionValue, Status, LessThanOrEqual, VersionType)
+                INSERT INTO [Versions] ([AffectedId], [VersionValue], [Status], [LessThanOrEqual], [VersionType])
                 VALUES (@AffectedId, @VersionValue, @Status, @LessThanOrEqual, @VersionType);";
 
         using var command = new SqlCommand(sql, connection);
@@ -208,7 +208,7 @@ public class SqlService
     private void InsertModule(SqlConnection connection, string moduleName, int affectedId)
     {
         var sql = @"
-                INSERT INTO Modules (AffectedId, ModuleName)
+                INSERT INTO [Modules] ([AffectedId], [ModuleName])
                 VALUES (@AffectedId, @ModuleName);";
 
         using var command = new SqlCommand(sql, connection);
@@ -220,7 +220,7 @@ public class SqlService
     private void InsertDescription(SqlConnection connection, Cve.Description desc, int cnaId)
     {
         var sql = @"
-                INSERT INTO Description (CveId, Language, DescriptionText)
+                INSERT INTO [Description] ([CveId], [Language], [DescriptionText])
                 VALUES (@CveId, @Language, @DescriptionText);";
 
         using var command = new SqlCommand(sql, connection);
@@ -233,7 +233,7 @@ public class SqlService
     private void InsertMetric(SqlConnection connection, Cve.Metric metric, int cnaId)
     {
         var sql = @"
-                INSERT INTO Metric (CnaId)
+                INSERT INTO [Metric] ([CnaId])
                 VALUES (@CnaId);
                 SELECT SCOPE_IDENTITY();";
 
@@ -253,7 +253,7 @@ public class SqlService
     private void InsertCvssV4_0(SqlConnection connection, Cve.CvssV4_0 cvss, int metricId)
     {
         var sql = @"
-                INSERT INTO CvssV4_0 (MetricId, Version, BaseScore, VectorString, BaseSeverity)
+                INSERT INTO [CvssV4_0] ([MetricId], [Version], [BaseScore], [VectorString], [BaseSeverity])
                 VALUES (@MetricId, @Version, @BaseScore, @VectorString, @BaseSeverity);";
 
         using var command = new SqlCommand(sql, connection);
@@ -268,7 +268,7 @@ public class SqlService
     private void InsertCvssV3_1(SqlConnection connection, Cve.CvssV3_1 cvss, int metricId)
     {
         var sql = @"
-                INSERT INTO CvssV3_1 (MetricId, Version, BaseScore, VectorString, BaseSeverity)
+                INSERT INTO [CvssV3_1] ([MetricId], [Version], [BaseScore], [VectorString], [BaseSeverity])
                 VALUES (@MetricId, @Version, @BaseScore, @VectorString, @BaseSeverity);";
 
         using var command = new SqlCommand(sql, connection);
@@ -283,7 +283,7 @@ public class SqlService
     private void InsertCvssV3_0(SqlConnection connection, Cve.CvssV3_0 cvss, int metricId)
     {
         var sql = @"
-                INSERT INTO CvssV3_0 (MetricId, Version, BaseScore, VectorString, BaseSeverity)
+                INSERT INTO [CvssV3_0] ([MetricId], [Version], [BaseScore], [VectorString], [BaseSeverity])
                 VALUES (@MetricId, @Version, @BaseScore, @VectorString, @BaseSeverity);";
 
         using var command = new SqlCommand(sql, connection);
@@ -399,7 +399,7 @@ public class SqlService
     private void InsertAdpMetric(SqlConnection connection, Cve.AdpMetric metric, int adpId)
     {
         var sql = @"
-                INSERT INTO AdpMetric (AdpId)
+                INSERT INTO [AdpMetric] (AdpId)
                 VALUES (@AdpId);
                 SELECT SCOPE_IDENTITY();";
 

@@ -6,18 +6,6 @@ namespace InsertCsvData.Services;
 
 public class CveService
 {
-    public static Cve.RootCve ParseCveData(string jsonData)
-    {
-        return JsonConvert.DeserializeObject<Cve.RootCve>(jsonData);
-    }
-
-    // 處理結果類型（簡化版）
-    public class MappingResult
-    {
-        public bool IsSuccess { get; set; }
-        public string OriginalFilePath { get; set; }
-    }
-
     // 單個檔案的映射方法（簡化版）
     private static MappingResult MapCveToModels(string filePath, string failureDirectory)
     {
@@ -31,7 +19,7 @@ public class CveService
             var serializer = new JsonSerializer();
             var rootCve = serializer.Deserialize<Cve.RootCve>(jsonReader);
 
-            if (rootCve == null || rootCve.CveMetadata == null)
+            if (rootCve?.CveMetadata == null)
                 throw new Exception("Failed to parse JSON data or missing critical CVE metadata.");
 
             var cveRecords = new List<Cve.CveRecord>
@@ -99,7 +87,6 @@ public class CveService
             var totalFiles = jsonFiles.Count;
             var successCount = 0;
             var failureCount = 0;
-            var processedCount = 0;
 
             // 初始化進度顯示
             UpdateProgress(totalFiles, successCount, failureCount);
@@ -108,7 +95,6 @@ public class CveService
             {
                 var result = MapCveToModels(filePath, failureDirectory);
 
-                processedCount++;
                 if (result.IsSuccess)
                     successCount++;
                 else
@@ -142,7 +128,7 @@ public class CveService
     /// <param name="rootCve">包含完整 CVE 資料的 RootCve 物件</param>
     public static void PrintFullCveDetails(Cve.RootCve rootCve)
     {
-        if (rootCve == null || rootCve.CveMetadata == null)
+        if (rootCve?.CveMetadata == null)
         {
             Console.WriteLine("Error: RootCve or CveMetadata is null.");
             return;
@@ -290,7 +276,7 @@ public class CveService
                 {
                     Console.WriteLine("--- ADP Metrics ---");
                     foreach (var metric in adp.Metrics)
-                        if (metric.Other != null && metric.Other.Content != null)
+                        if (metric.Other is { Content: not null })
                         {
                             Console.WriteLine(
                                 $"SSVC - ID: {metric.Other.Content.Id ?? "N/A"}, Timestamp: {metric.Other.Content.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")}, Version: {metric.Other.Content.Version ?? "N/A"}");
@@ -441,7 +427,7 @@ public class CveService
             isMatch &= VerifyCnaContainer(jsonCna, containers.Cna, discrepancies);
         }
 
-        if (containers.Adp != null && containers.Adp.Count > 0)
+        if (containers.Adp is { Count: > 0 })
         {
             var jsonAdp = jsonContainers["adp"] as JArray;
             if (jsonAdp == null || jsonAdp.Count != containers.Adp.Count)
@@ -484,7 +470,7 @@ public class CveService
         }
 
         // ProblemTypes
-        if (cna.ProblemTypes != null && cna.ProblemTypes.Count > 0)
+        if (cna.ProblemTypes is { Count: > 0 })
         {
             var jsonProblems = jsonCna["problemTypes"] as JArray;
             if (jsonProblems == null || jsonProblems.Count != cna.ProblemTypes.Count)
@@ -527,7 +513,7 @@ public class CveService
         }
 
         // Affected
-        if (cna.Affected != null && cna.Affected.Count > 0)
+        if (cna.Affected is { Count: > 0 })
         {
             var jsonAffected = jsonCna["affected"] as JArray;
             if (jsonAffected == null || jsonAffected.Count != cna.Affected.Count)
@@ -544,7 +530,7 @@ public class CveService
         }
 
         // Descriptions
-        if (cna.Descriptions != null && cna.Descriptions.Count > 0)
+        if (cna.Descriptions is { Count: > 0 })
         {
             var jsonDescriptions = jsonCna["descriptions"] as JArray;
             if (jsonDescriptions == null || jsonDescriptions.Count != cna.Descriptions.Count)
@@ -568,31 +554,29 @@ public class CveService
                     }
 
                     // SupportingMedia（若有）
-                    if (modelDesc.SupportingMedia != null && modelDesc.SupportingMedia.Count > 0)
+                    if (modelDesc.SupportingMedia is not { Count: > 0 }) continue;
+
+                    var jsonMedia = jsonDesc["supportingMedia"] as JArray;
+                    if (jsonMedia == null || jsonMedia.Count != modelDesc.SupportingMedia.Count)
                     {
-                        var jsonMedia = jsonDesc["supportingMedia"] as JArray;
-                        if (jsonMedia == null || jsonMedia.Count != modelDesc.SupportingMedia.Count)
+                        isMatch = false;
+                        discrepancies.Add(
+                            $"Cna.Descriptions[{i}].SupportingMedia count mismatch: JSON = '{jsonMedia?.Count ?? 0}', Model = '{modelDesc.SupportingMedia.Count}'");
+                    }
+                    else
+                    {
+                        for (var j = 0; j < modelDesc.SupportingMedia.Count; j++)
                         {
+                            var jsonSM = jsonMedia[j];
+                            var modelSM = modelDesc.SupportingMedia[j];
+                            if (jsonSM["language"]?.ToString() == modelSM.Language &&
+                                jsonSM["type"]?.ToString() == modelSM.Type &&
+                                jsonSM["base64"]?.ToString() == modelSM.Base64.ToString() &&
+                                jsonSM["value"]?.ToString() == modelSM.Value) continue;
+
                             isMatch = false;
                             discrepancies.Add(
-                                $"Cna.Descriptions[{i}].SupportingMedia count mismatch: JSON = '{jsonMedia?.Count ?? 0}', Model = '{modelDesc.SupportingMedia.Count}'");
-                        }
-                        else
-                        {
-                            for (var j = 0; j < modelDesc.SupportingMedia.Count; j++)
-                            {
-                                var jsonSM = jsonMedia[j];
-                                var modelSM = modelDesc.SupportingMedia[j];
-                                if (jsonSM["language"]?.ToString() != modelSM.Language ||
-                                    jsonSM["type"]?.ToString() != modelSM.Type ||
-                                    jsonSM["base64"]?.ToString() != modelSM.Base64.ToString() ||
-                                    jsonSM["value"]?.ToString() != modelSM.Value)
-                                {
-                                    isMatch = false;
-                                    discrepancies.Add(
-                                        $"Cna.Descriptions[{i}].SupportingMedia[{j}] mismatch: JSON = '{jsonSM}', Model = 'Lang: {modelSM.Language}, Type: {modelSM.Type}, Base64: {modelSM.Base64}, Value: {modelSM.Value}'");
-                                }
-                            }
+                                $"Cna.Descriptions[{i}].SupportingMedia[{j}] mismatch: JSON = '{jsonSM}', Model = 'Lang: {modelSM.Language}, Type: {modelSM.Type}, Base64: {modelSM.Base64}, Value: {modelSM.Value}'");
                         }
                     }
                 }
@@ -600,7 +584,7 @@ public class CveService
         }
 
         // Metrics
-        if (cna.Metrics != null && cna.Metrics.Count > 0)
+        if (cna.Metrics is { Count: > 0 })
         {
             var jsonMetrics = jsonCna["metrics"] as JArray;
             if (jsonMetrics == null || jsonMetrics.Count != cna.Metrics.Count)
@@ -632,15 +616,14 @@ public class CveService
                     if (modelMetric.CvssV3_1 != null)
                     {
                         var jsonCvss = jsonMetric["cvssV3_1"] as JObject;
-                        if (jsonCvss == null ||
-                            jsonCvss["baseScore"]?.ToString() != modelMetric.CvssV3_1.BaseScore.ToString() ||
-                            jsonCvss["baseSeverity"]?.ToString() != modelMetric.CvssV3_1.BaseSeverity ||
-                            jsonCvss["vectorString"]?.ToString() != modelMetric.CvssV3_1.VectorString)
-                        {
-                            isMatch = false;
-                            discrepancies.Add(
-                                $"Cna.Metrics[{i}].CvssV3_1 mismatch: JSON = '{jsonCvss}', Model = 'Score: {modelMetric.CvssV3_1.BaseScore}, Severity: {modelMetric.CvssV3_1.BaseSeverity}, Vector: {modelMetric.CvssV3_1.VectorString}'");
-                        }
+                        if (jsonCvss != null &&
+                            jsonCvss["baseScore"]?.ToString() == modelMetric.CvssV3_1.BaseScore.ToString() &&
+                            jsonCvss["baseSeverity"]?.ToString() == modelMetric.CvssV3_1.BaseSeverity &&
+                            jsonCvss["vectorString"]?.ToString() == modelMetric.CvssV3_1.VectorString) continue;
+
+                        isMatch = false;
+                        discrepancies.Add(
+                            $"Cna.Metrics[{i}].CvssV3_1 mismatch: JSON = '{jsonCvss}', Model = 'Score: {modelMetric.CvssV3_1.BaseScore}, Severity: {modelMetric.CvssV3_1.BaseSeverity}, Vector: {modelMetric.CvssV3_1.VectorString}'");
                     }
                     // 同理檢查 CvssV3_0 和 CvssV2_0
                 }
@@ -648,7 +631,7 @@ public class CveService
         }
 
         // Timeline
-        if (cna.Timeline != null && cna.Timeline.Count > 0)
+        if (cna.Timeline is { Count: > 0 })
         {
             var jsonTimeline = jsonCna["timeline"] as JArray;
             if (jsonTimeline == null || jsonTimeline.Count != cna.Timeline.Count)
@@ -676,7 +659,7 @@ public class CveService
         }
 
         // Credits
-        if (cna.Credits != null && cna.Credits.Count > 0)
+        if (cna.Credits is { Count: > 0 })
         {
             var jsonCredits = jsonCna["credits"] as JArray;
             if (jsonCredits == null || jsonCredits.Count != cna.Credits.Count)
@@ -704,7 +687,7 @@ public class CveService
         }
 
         // References
-        if (cna.References != null && cna.References.Count > 0)
+        if (cna.References is not { Count: > 0 }) return isMatch;
         {
             var jsonReferences = jsonCna["references"] as JArray;
             if (jsonReferences == null || jsonReferences.Count != cna.References.Count)
@@ -758,7 +741,7 @@ public class CveService
                 $"Cna.Affected[{index}].Product mismatch: JSON = '{jsonAffected["product"]}', Model = '{affected.Product}'");
         }
 
-        if (affected.Versions != null && affected.Versions.Count > 0)
+        if (affected.Versions is { Count: > 0 })
         {
             var jsonVersions = jsonAffected["versions"] as JArray;
             if (jsonVersions == null || jsonVersions.Count != affected.Versions.Count)
@@ -786,17 +769,15 @@ public class CveService
             }
         }
 
-        if (affected.Modules != null && affected.Modules.Count > 0)
-        {
-            var jsonModules = jsonAffected["modules"] as JArray;
-            if (jsonModules == null || jsonModules.Count != affected.Modules.Count ||
-                !jsonModules.Select(m => m.ToString()).SequenceEqual(affected.Modules))
-            {
-                isMatch = false;
-                discrepancies.Add(
-                    $"Cna.Affected[{index}].Modules mismatch: JSON = '{jsonModules}', Model = '{string.Join(",", affected.Modules)}'");
-            }
-        }
+        if (affected.Modules is not { Count: > 0 }) return isMatch;
+
+        var jsonModules = jsonAffected["modules"] as JArray;
+        if (jsonModules != null && jsonModules.Count == affected.Modules.Count &&
+            jsonModules.Select(m => m.ToString()).SequenceEqual(affected.Modules)) return isMatch;
+
+        isMatch = false;
+        discrepancies.Add(
+            $"Cna.Affected[{index}].Modules mismatch: JSON = '{jsonModules}', Model = '{string.Join(",", affected.Modules)}'");
 
         return isMatch;
     }
@@ -824,7 +805,7 @@ public class CveService
                 $"Containers.Adp[{index}].ProviderMetadata");
         }
 
-        if (adp.Metrics != null && adp.Metrics.Count > 0)
+        if (adp.Metrics is { Count: > 0 })
         {
             var jsonMetrics = jsonAdp["metrics"] as JArray;
             if (jsonMetrics == null || jsonMetrics.Count != adp.Metrics.Count)
@@ -839,56 +820,52 @@ public class CveService
                 {
                     var jsonMetric = jsonMetrics[i] as JObject;
                     var modelMetric = adp.Metrics[i];
-                    if (modelMetric.Other != null && modelMetric.Other.Content != null)
-                    {
-                        var jsonOther = jsonMetric["other"] as JObject;
-                        if (jsonOther == null || jsonOther["type"]?.ToString() != modelMetric.Other.Type)
-                        {
-                            isMatch = false;
-                            discrepancies.Add(
-                                $"Containers.Adp[{index}].Metrics[{i}].Other.Type mismatch: JSON = '{jsonOther?["type"]}', Model = '{modelMetric.Other.Type}'");
-                        }
+                    if (modelMetric.Other == null || modelMetric.Other.Content == null) continue;
 
-                        var jsonContent = jsonOther?["content"] as JObject;
-                        if (jsonContent != null && modelMetric.Other.Content != null)
+                    var jsonOther = jsonMetric["other"] as JObject;
+                    if (jsonOther == null || jsonOther["type"]?.ToString() != modelMetric.Other.Type)
+                    {
+                        isMatch = false;
+                        discrepancies.Add(
+                            $"Containers.Adp[{index}].Metrics[{i}].Other.Type mismatch: JSON = '{jsonOther?["type"]}', Model = '{modelMetric.Other.Type}'");
+                    }
+
+                    var jsonContent = jsonOther?["content"] as JObject;
+                    if (jsonContent == null || modelMetric.Other.Content == null) continue;
+
+                    if (jsonContent["id"]?.ToString() != modelMetric.Other.Content.Id ||
+                        jsonContent["timestamp"]?.ToString() !=
+                        modelMetric.Other.Content.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss") ||
+                        jsonContent["version"]?.ToString() != modelMetric.Other.Content.Version ||
+                        jsonContent["role"]?.ToString() != modelMetric.Other.Content.Role)
+                    {
+                        isMatch = false;
+                        discrepancies.Add(
+                            $"Containers.Adp[{index}].Metrics[{i}].Other.Content mismatch: JSON = '{jsonContent}', Model = 'Id: {modelMetric.Other.Content.Id}, TS: {modelMetric.Other.Content.Timestamp:yyyy-MM-ddTHH:mm:ss}, Ver: {modelMetric.Other.Content.Version}, Role: {modelMetric.Other.Content.Role}'");
+                    }
+
+                    if (modelMetric.Other.Content.Options is not { Count: > 0 }) continue;
+
+                    var jsonOptions = jsonContent["options"] as JArray;
+                    if (jsonOptions == null || jsonOptions.Count != modelMetric.Other.Content.Options.Count)
+                    {
+                        isMatch = false;
+                        discrepancies.Add(
+                            $"Containers.Adp[{index}].Metrics[{i}].Other.Content.Options count mismatch: JSON = '{jsonOptions?.Count ?? 0}', Model = '{modelMetric.Other.Content.Options.Count}'");
+                    }
+                    else
+                    {
+                        for (var j = 0; j < modelMetric.Other.Content.Options.Count; j++)
                         {
-                            if (jsonContent["id"]?.ToString() != modelMetric.Other.Content.Id ||
-                                jsonContent["timestamp"]?.ToString() !=
-                                modelMetric.Other.Content.Timestamp.ToString("yyyy-MM-ddTHH:mm:ss") ||
-                                jsonContent["version"]?.ToString() != modelMetric.Other.Content.Version ||
-                                jsonContent["role"]?.ToString() != modelMetric.Other.Content.Role)
+                            var jsonOption = jsonOptions[j];
+                            var modelOption = modelMetric.Other.Content.Options[j];
+                            if (jsonOption["exploitation"]?.ToString() != modelOption.Exploitation ||
+                                jsonOption["automatable"]?.ToString() != modelOption.Automatable ||
+                                jsonOption["technicalImpact"]?.ToString() != modelOption.TechnicalImpact)
                             {
                                 isMatch = false;
                                 discrepancies.Add(
-                                    $"Containers.Adp[{index}].Metrics[{i}].Other.Content mismatch: JSON = '{jsonContent}', Model = 'Id: {modelMetric.Other.Content.Id}, TS: {modelMetric.Other.Content.Timestamp:yyyy-MM-ddTHH:mm:ss}, Ver: {modelMetric.Other.Content.Version}, Role: {modelMetric.Other.Content.Role}'");
-                            }
-
-                            if (modelMetric.Other.Content.Options != null &&
-                                modelMetric.Other.Content.Options.Count > 0)
-                            {
-                                var jsonOptions = jsonContent["options"] as JArray;
-                                if (jsonOptions == null || jsonOptions.Count != modelMetric.Other.Content.Options.Count)
-                                {
-                                    isMatch = false;
-                                    discrepancies.Add(
-                                        $"Containers.Adp[{index}].Metrics[{i}].Other.Content.Options count mismatch: JSON = '{jsonOptions?.Count ?? 0}', Model = '{modelMetric.Other.Content.Options.Count}'");
-                                }
-                                else
-                                {
-                                    for (var j = 0; j < modelMetric.Other.Content.Options.Count; j++)
-                                    {
-                                        var jsonOption = jsonOptions[j];
-                                        var modelOption = modelMetric.Other.Content.Options[j];
-                                        if (jsonOption["exploitation"]?.ToString() != modelOption.Exploitation ||
-                                            jsonOption["automatable"]?.ToString() != modelOption.Automatable ||
-                                            jsonOption["technicalImpact"]?.ToString() != modelOption.TechnicalImpact)
-                                        {
-                                            isMatch = false;
-                                            discrepancies.Add(
-                                                $"Containers.Adp[{index}].Metrics[{i}].Other.Content.Options[{j}] mismatch: JSON = '{jsonOption}', Model = 'Exp: {modelOption.Exploitation}, Auto: {modelOption.Automatable}, TI: {modelOption.TechnicalImpact}'");
-                                        }
-                                    }
-                                }
+                                    $"Containers.Adp[{index}].Metrics[{i}].Other.Content.Options[{j}] mismatch: JSON = '{jsonOption}', Model = 'Exp: {modelOption.Exploitation}, Auto: {modelOption.Automatable}, TI: {modelOption.TechnicalImpact}'");
                             }
                         }
                     }
@@ -940,18 +917,16 @@ public class CveService
         if (string.IsNullOrEmpty(jsonDateTime) || !modelDateTime.HasValue) return false; // 一方為 null，另一方有值，不相等
 
         // 解析 JSON 中的時間字串
-        if (DateTime.TryParse(jsonDateTime, out var parsedJsonDateTime))
-        {
-            // 確保兩者都轉換為 UTC 進行比較
-            var jsonUtc = parsedJsonDateTime.Kind == DateTimeKind.Unspecified
-                ? DateTime.SpecifyKind(parsedJsonDateTime, DateTimeKind.Utc)
-                : parsedJsonDateTime.ToUniversalTime();
-            var modelUtc = modelDateTime.Value.ToUniversalTime();
+        if (!DateTime.TryParse(jsonDateTime, out var parsedJsonDateTime)) return false; // 無法解析 JSON 時間，視為不匹配
 
-            // 比較時間值（忽略毫秒以下的差異，根據需求可調整）
-            return jsonUtc == modelUtc;
-        }
+        // 確保兩者都轉換為 UTC 進行比較
+        var jsonUtc = parsedJsonDateTime.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(parsedJsonDateTime, DateTimeKind.Utc)
+            : parsedJsonDateTime.ToUniversalTime();
+        var modelUtc = modelDateTime.Value.ToUniversalTime();
 
-        return false; // 無法解析 JSON 時間，視為不匹配
+        // 比較時間值（忽略毫秒以下的差異，根據需求可調整）
+        return jsonUtc == modelUtc;
+
     }
 }
