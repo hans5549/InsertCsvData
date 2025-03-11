@@ -2,270 +2,143 @@ using Newtonsoft.Json;
 
 namespace InsertCsvData.Models;
 
+/// <summary>
+/// CVE (Common Vulnerabilities and Exposures) 資料模型
+/// </summary>
 public class Cve
 {
     /// <summary>
-    /// 根物件，表示完整的 CVE 記錄
+    /// CVE 資料的根結構
     /// </summary>
-    public class CveRecord
+    public class RootCve
     {
         /// <summary>
-        /// 資料類型，例如 "CVE_RECORD"
+        /// 資料類型
         /// </summary>
-        [JsonProperty("dataType")]
-        public string DataType { get; set; } = string.Empty;
+        public string DataType { get; set; }
 
         /// <summary>
-        /// 資料版本，例如 "5.1"
+        /// 資料版本
         /// </summary>
-        [JsonProperty("dataVersion")]
-        public string DataVersion { get; set; } = string.Empty;
+        public string DataVersion { get; set; }
 
         /// <summary>
         /// CVE 元資料
         /// </summary>
-        [JsonProperty("cveMetadata")]
         public CveMetadata CveMetadata { get; set; }
 
         /// <summary>
-        /// 容器資料，包含 CNA 和 ADP 資訊
+        /// 包含 CNA 和 ADP 的容器
         /// </summary>
-        [JsonProperty("containers")]
         public Containers Containers { get; set; }
     }
 
     /// <summary>
-    /// CVE 元資料
+    /// CVE 元資料，包含基本識別資訊
     /// </summary>
     public class CveMetadata
     {
         /// <summary>
-        /// CVE 編號，例如 "CVE-2025-0001"
+        /// CVE 識別碼，如 CVE-2023-1234
         /// </summary>
-        [JsonProperty("cveId")]
-        public string CveId { get; set; } = string.Empty;
+        public string CveId { get; set; }
 
         /// <summary>
-        /// 分配組織的 ID
+        /// 分配機構的組織 ID
         /// </summary>
-        [JsonProperty("assignerOrgId")]
-        public string AssignerOrgId { get; set; } = string.Empty;
+        public string AssignerOrgId { get; set; }
 
         /// <summary>
-        /// 分配組織簡稱，例如 "sap"
+        /// 分配機構的簡稱
         /// </summary>
-        [JsonProperty("assignerShortName")]
-        public string AssignerShortName { get; set; } = string.Empty;
+        public string AssignerShortName { get; set; }
 
         /// <summary>
-        /// 請求者用戶 ID
+        /// CVE 記錄的狀態
         /// </summary>
-        [JsonProperty("requesterUserId")]
-        public string RequesterUserId { get; set; } = string.Empty;
+        public string State { get; set; }
 
         /// <summary>
-        /// 序列號
+        /// CVE ID 保留日期
         /// </summary>
-        [JsonProperty("serial")]
-        public int? Serial { get; set; }
-
-        /// <summary>
-        /// 狀態，例如 "PUBLISHED"
-        /// </summary>
-        [JsonProperty("state")]
-        public string State { get; set; } = string.Empty;
-
-        /// <summary>
-        /// 保留日期
-        /// </summary>
-        [JsonProperty("dateReserved")]
         public DateTime? DateReserved { get; set; }
 
         /// <summary>
-        /// 發布日期
+        /// CVE 首次公開日期
         /// </summary>
-        [JsonProperty("datePublished")]
         public DateTime? DatePublished { get; set; }
 
         /// <summary>
-        /// 更新日期
+        /// CVE 最後更新日期
         /// </summary>
-        [JsonProperty("dateUpdated")]
         public DateTime? DateUpdated { get; set; }
     }
 
     /// <summary>
-    /// 容器資料
+    /// 包含 CNA 和 ADP 資料的容器結構
     /// </summary>
     public class Containers
     {
         /// <summary>
-        /// CNA (CVE Numbering Authority) 資料
+        /// CNA (CVE Numbering Authority) 容器
         /// </summary>
-        [JsonProperty("cna")]
-        public Cna Cna { get; set; }
+        public CnaContainer Cna { get; set; }
 
         /// <summary>
-        /// ADP (Additional Data Provider) 資料
+        /// ADP (Authorized Data Publisher) 容器列表
         /// </summary>
-        [JsonProperty("adp")]
-        public List<Adp> Adp { get; set; }
+        public List<AdpContainer> Adp { get; set; }
     }
 
     /// <summary>
-    /// CNA 資料
+    /// CNA (CVE Numbering Authority) 容器，包含 CVE 的主要資訊
     /// </summary>
-    public class Cna
+    public class CnaContainer
     {
         /// <summary>
         /// 提供者元資料
         /// </summary>
-        [JsonProperty("providerMetadata")]
         public ProviderMetadata ProviderMetadata { get; set; }
 
         /// <summary>
-        /// 漏洞標題
+        /// CVE 標題
         /// </summary>
-        [JsonProperty("title")]
-        public string Title { get; set; } = string.Empty;
+        public string Title { get; set; }
 
         /// <summary>
-        /// 公開日期
+        /// 問題類型列表，如 CWE 分類
         /// </summary>
-        [JsonProperty("datePublic")]
-        public DateTime? DatePublic { get; set; }
-
-        /// <summary>
-        /// 問題類型列表
-        /// </summary>
-        [JsonProperty("problemTypes")]
         public List<ProblemType> ProblemTypes { get; set; }
 
         /// <summary>
-        /// 影響列表
+        /// 受影響的產品列表
         /// </summary>
-        [JsonProperty("impacts")]
-        public List<Impact> Impacts { get; set; }
-
-        /// <summary>
-        /// 受影響的產品資訊
-        /// </summary>
-        [JsonProperty("affected")]
         public List<Affected> Affected { get; set; }
 
         /// <summary>
-        /// 漏洞描述列表
+        /// CVE 描述列表
         /// </summary>
-        [JsonProperty("descriptions")]
         public List<Description> Descriptions { get; set; }
 
         /// <summary>
-        /// 漏洞評分指標
+        /// 評分指標列表，如 CVSS 分數
         /// </summary>
-        [JsonProperty("metrics")]
         public List<Metric> Metrics { get; set; }
 
         /// <summary>
-        /// 解決方案列表
+        /// 時間線事件列表
         /// </summary>
-        [JsonProperty("solutions")]
-        public List<Solution> Solutions { get; set; }
+        public List<TimelineEntry> Timeline { get; set; }
 
         /// <summary>
-        /// 臨時解決方法列表
+        /// 貢獻者列表
         /// </summary>
-        [JsonProperty("workarounds")]
-        public List<Workaround> Workarounds { get; set; }
+        public List<Credit> Credits { get; set; }
 
         /// <summary>
         /// 參考資料列表
         /// </summary>
-        [JsonProperty("references")]
         public List<Reference> References { get; set; }
-
-        /// <summary>
-        /// 來源資訊
-        /// </summary>
-        [JsonProperty("source")]
-        public Source Source { get; set; }
-
-        /// <summary>
-        /// 貢獻者資訊
-        /// </summary>
-        [JsonProperty("credits")]
-        public List<Credit> Credits { get; set; }
-
-        /// <summary>
-        /// 配置資訊
-        /// </summary>
-        [JsonProperty("configurations")]
-        public List<Configuration> Configurations { get; set; }
-
-        /// <summary>
-        /// 時間線
-        /// </summary>
-        [JsonProperty("timeline")]
-        public List<Timeline> Timeline { get; set; }
-
-        /// <summary>
-        /// 產生器資訊
-        /// </summary>
-        [JsonProperty("x_generator")]
-        public Generator Generator { get; set; }
-
-        /// <summary>
-        /// 標籤
-        /// </summary>
-        [JsonProperty("tags")]
-        public List<string> Tags { get; set; }
-
-        /// <summary>
-        /// 受影響的版本列表
-        /// </summary>
-        [JsonProperty("x_affectedList")]
-        public List<string> XAffectedList { get; set; }
-
-        /// <summary>
-        /// 模組
-        /// </summary>
-        [JsonProperty("modules")]
-        public List<string> Modules { get; set; }
-    }
-
-    /// <summary>
-    /// ADP 資料
-    /// </summary>
-    public class Adp
-    {
-        /// <summary>
-        /// 評分指標
-        /// </summary>
-        [JsonProperty("metrics")]
-        public List<AdpMetric> Metrics { get; set; }
-
-        /// <summary>
-        /// 標題
-        /// </summary>
-        [JsonProperty("title")]
-        public string Title { get; set; } = string.Empty;
-
-        /// <summary>
-        /// 提供者元資料
-        /// </summary>
-        [JsonProperty("providerMetadata")]
-        public ProviderMetadata ProviderMetadata { get; set; }
-
-        /// <summary>
-        /// 參考資料
-        /// </summary>
-        [JsonProperty("references")]
-        public List<Reference> References { get; set; }
-
-        /// <summary>
-        /// 時間線
-        /// </summary>
-        [JsonProperty("timeline")]
-        public List<Timeline> Timeline { get; set; }
     }
 
     /// <summary>
@@ -274,51 +147,23 @@ public class Cve
     public class Affected
     {
         /// <summary>
-        /// 廠商名稱，例如 "Example.org"
+        /// 廠商名稱
         /// </summary>
-        [JsonProperty("vendor")]
         public string Vendor { get; set; }
 
         /// <summary>
-        /// 產品名稱，例如 "Example Enterprise"
+        /// 產品名稱
         /// </summary>
-        [JsonProperty("product")]
         public string Product { get; set; }
 
         /// <summary>
-        /// 支援平台，例如 ["Windows", "MacOS", "XT-4500"]
+        /// 受影響的版本列表
         /// </summary>
-        [JsonProperty("platforms")]
-        public List<string> Platforms { get; set; }
-
-        /// <summary>
-        /// 版本資訊列表
-        /// </summary>
-        [JsonProperty("versions")]
         public List<Version> Versions { get; set; }
 
         /// <summary>
-        /// 預設狀態，例如 "unaffected"
+        /// 受影響的模組列表
         /// </summary>
-        [JsonProperty("defaultStatus")]
-        public string DefaultStatus { get; set; }
-
-        /// <summary>
-        /// CPE 識別碼列表
-        /// </summary>
-        [JsonProperty("cpes")]
-        public List<string> Cpes { get; set; }
-
-        /// <summary>
-        /// 儲存庫
-        /// </summary>
-        [JsonProperty("repo")]
-        public string Repo { get; set; }
-
-        /// <summary>
-        /// 模組
-        /// </summary>
-        [JsonProperty("modules")]
         public List<string> Modules { get; set; }
     }
 
@@ -328,400 +173,46 @@ public class Cve
     public class Version
     {
         /// <summary>
-        /// 版本號，例如 "1.0.0"
+        /// 版本值
         /// </summary>
         [JsonProperty("version")]
-        public string VersionNumber { get; set; }
+        public string VersionValue { get; set; }
 
         /// <summary>
-        /// 狀態，例如 "affected" 或 "unaffected"
+        /// 版本狀態，如 "affected" 或 "unaffected"
         /// </summary>
-        [JsonProperty("status")]
         public string Status { get; set; }
 
         /// <summary>
-        /// 小於某版本，例如 "1.0.6"
+        /// 小於等於的版本範圍
         /// </summary>
-        [JsonProperty("lessThan")]
-        public string LessThan { get; set; }
-
-        /// <summary>
-        /// 小於等於某版本
-        /// </summary>
-        [JsonProperty("lessThanOrEqual")]
         public string LessThanOrEqual { get; set; }
 
         /// <summary>
-        /// 版本類型，例如 "semver", "custom"
+        /// 版本類型
         /// </summary>
-        [JsonProperty("versionType")]
         public string VersionType { get; set; }
-
-        /// <summary>
-        /// 版本變更列表
-        /// </summary>
-        [JsonProperty("changes")]
-        public List<Change> Changes { get; set; }
     }
 
     /// <summary>
-    /// 版本變更
+    /// ADP (Authorized Data Publisher) 容器
     /// </summary>
-    public class Change
+    public class AdpContainer
     {
         /// <summary>
-        /// 變更版本點，例如 "1.2.0"
+        /// ADP 提供的標題
         /// </summary>
-        [JsonProperty("at")]
-        public string At { get; set; }
+        public string Title { get; set; }
 
         /// <summary>
-        /// 變更後的狀態，例如 "unaffected"
+        /// ADP 提供的評分指標列表
         /// </summary>
-        [JsonProperty("status")]
-        public string Status { get; set; }
-    }
-
-    /// <summary>
-    /// 漏洞評分指標
-    /// </summary>
-    public class Metric
-    {
-        /// <summary>
-        /// 評分格式，例如 "CVSS"
-        /// </summary>
-        [JsonProperty("format")]
-        public string Format { get; set; }
+        public List<AdpMetric> Metrics { get; set; }
 
         /// <summary>
-        /// CVSS 3.1 評分
+        /// ADP 提供者元資料
         /// </summary>
-        [JsonProperty("cvssV3_1")]
-        public CvssV31 CvssV31 { get; set; }
-
-        /// <summary>
-        /// CVSS 4.0 評分
-        /// </summary>
-        [JsonProperty("cvssV4_0")]
-        public CvssV40 CvssV40 { get; set; }
-
-        /// <summary>
-        /// CVSS 3.0 評分
-        /// </summary>
-        [JsonProperty("cvssV3_0")]
-        public CvssV30 CvssV30 { get; set; }
-
-        /// <summary>
-        /// CVSS 2.0 評分
-        /// </summary>
-        [JsonProperty("cvssV2_0")]
-        public CvssV20 CvssV20 { get; set; }
-
-        /// <summary>
-        /// 評分場景
-        /// </summary>
-        [JsonProperty("scenarios")]
-        public List<Scenario> Scenarios { get; set; }
-    }
-
-    /// <summary>
-    /// ADP 評分指標
-    /// </summary>
-    public class AdpMetric
-    {
-        /// <summary>
-        /// CVSS 3.1 評分
-        /// </summary>
-        [JsonProperty("cvssV3_1")]
-        public CvssV31 CvssV31 { get; set; }
-
-        /// <summary>
-        /// 其他評分系統
-        /// </summary>
-        [JsonProperty("other")]
-        public OtherMetric Other { get; set; }
-    }
-
-    /// <summary>
-    /// 其他評分系統
-    /// </summary>
-    public class OtherMetric
-    {
-        /// <summary>
-        /// 評分類型，例如 "ssvc"
-        /// </summary>
-        [JsonProperty("type")]
-        public string Type { get; set; }
-
-        /// <summary>
-        /// 評分內容
-        /// </summary>
-        [JsonProperty("content")]
-        public object Content { get; set; }
-    }
-
-    /// <summary>
-    /// CVSS 評分 (3.1 版)
-    /// </summary>
-    public class CvssV31
-    {
-        /// <summary>
-        /// 版本，例如 "3.1"
-        /// </summary>
-        [JsonProperty("version")]
-        public string Version { get; set; }
-
-        /// <summary>
-        /// 基礎分數，例如 9.8
-        /// </summary>
-        [JsonProperty("baseScore")]
-        public float BaseScore { get; set; }
-
-        /// <summary>
-        /// 嚴重性，例如 "CRITICAL"
-        /// </summary>
-        [JsonProperty("baseSeverity")]
-        public string BaseSeverity { get; set; }
-
-        /// <summary>
-        /// 向量字串
-        /// </summary>
-        [JsonProperty("vectorString")]
-        public string VectorString { get; set; }
-
-        /// <summary>
-        /// 攻擊向量
-        /// </summary>
-        [JsonProperty("attackVector")]
-        public string AttackVector { get; set; }
-
-        /// <summary>
-        /// 攻擊複雜度
-        /// </summary>
-        [JsonProperty("attackComplexity")]
-        public string AttackComplexity { get; set; }
-
-        /// <summary>
-        /// 所需權限
-        /// </summary>
-        [JsonProperty("privilegesRequired")]
-        public string PrivilegesRequired { get; set; }
-
-        /// <summary>
-        /// 用戶互動
-        /// </summary>
-        [JsonProperty("userInteraction")]
-        public string UserInteraction { get; set; }
-
-        /// <summary>
-        /// 影響範圍
-        /// </summary>
-        [JsonProperty("scope")]
-        public string Scope { get; set; }
-
-        /// <summary>
-        /// 機密性影響
-        /// </summary>
-        [JsonProperty("confidentialityImpact")]
-        public string ConfidentialityImpact { get; set; }
-
-        /// <summary>
-        /// 完整性影響
-        /// </summary>
-        [JsonProperty("integrityImpact")]
-        public string IntegrityImpact { get; set; }
-
-        /// <summary>
-        /// 可用性影響
-        /// </summary>
-        [JsonProperty("availabilityImpact")]
-        public string AvailabilityImpact { get; set; }
-    }
-
-    /// <summary>
-    /// CVSS 評分 (3.0 版)
-    /// </summary>
-    public class CvssV30
-    {
-        /// <summary>
-        /// 版本，例如 "3.0"
-        /// </summary>
-        [JsonProperty("version")]
-        public string Version { get; set; }
-
-        /// <summary>
-        /// 基礎分數
-        /// </summary>
-        [JsonProperty("baseScore")]
-        public float BaseScore { get; set; }
-
-        /// <summary>
-        /// 嚴重性
-        /// </summary>
-        [JsonProperty("baseSeverity")]
-        public string BaseSeverity { get; set; }
-
-        /// <summary>
-        /// 向量字串
-        /// </summary>
-        [JsonProperty("vectorString")]
-        public string VectorString { get; set; }
-    }
-
-    /// <summary>
-    /// CVSS 評分 (2.0 版)
-    /// </summary>
-    public class CvssV20
-    {
-        /// <summary>
-        /// 版本，例如 "2.0"
-        /// </summary>
-        [JsonProperty("version")]
-        public string Version { get; set; }
-
-        /// <summary>
-        /// 基礎分數
-        /// </summary>
-        [JsonProperty("baseScore")]
-        public float BaseScore { get; set; }
-
-        /// <summary>
-        /// 向量字串
-        /// </summary>
-        [JsonProperty("vectorString")]
-        public string VectorString { get; set; }
-    }
-
-    /// <summary>
-    /// CVSS 評分 (4.0 版)
-    /// </summary>
-    public class CvssV40
-    {
-        /// <summary>
-        /// 版本，例如 "4.0"
-        /// </summary>
-        [JsonProperty("version")]
-        public string Version { get; set; }
-
-        /// <summary>
-        /// 基礎分數，例如 7.8
-        /// </summary>
-        [JsonProperty("baseScore")]
-        public float BaseScore { get; set; }
-
-        /// <summary>
-        /// 嚴重性，例如 "HIGH"
-        /// </summary>
-        [JsonProperty("baseSeverity")]
-        public string BaseSeverity { get; set; }
-
-        /// <summary>
-        /// 向量字串
-        /// </summary>
-        [JsonProperty("vectorString")]
-        public string VectorString { get; set; }
-
-        /// <summary>
-        /// 攻擊向量
-        /// </summary>
-        [JsonProperty("attackVector")]
-        public string AttackVector { get; set; }
-
-        /// <summary>
-        /// 攻擊複雜度
-        /// </summary>
-        [JsonProperty("attackComplexity")]
-        public string AttackComplexity { get; set; }
-
-        /// <summary>
-        /// 攻擊需求
-        /// </summary>
-        [JsonProperty("attackRequirements")]
-        public string AttackRequirements { get; set; }
-
-        /// <summary>
-        /// 所需權限
-        /// </summary>
-        [JsonProperty("privilegesRequired")]
-        public string PrivilegesRequired { get; set; }
-
-        /// <summary>
-        /// 用戶互動
-        /// </summary>
-        [JsonProperty("userInteraction")]
-        public string UserInteraction { get; set; }
-
-        /// <summary>
-        /// 提供者緊急程度
-        /// </summary>
-        [JsonProperty("providerUrgency")]
-        public string ProviderUrgency { get; set; }
-
-        /// <summary>
-        /// 是否可自動化
-        /// </summary>
-        [JsonProperty("Automatable")]
-        public string Automatable { get; set; }
-
-        /// <summary>
-        /// 復原
-        /// </summary>
-        [JsonProperty("Recovery")]
-        public string Recovery { get; set; }
-
-        /// <summary>
-        /// 安全性
-        /// </summary>
-        [JsonProperty("Safety")]
-        public string Safety { get; set; }
-
-        /// <summary>
-        /// 漏洞可用性影響
-        /// </summary>
-        [JsonProperty("vulnAvailabilityImpact")]
-        public string VulnAvailabilityImpact { get; set; }
-
-        /// <summary>
-        /// 漏洞機密性影響
-        /// </summary>
-        [JsonProperty("vulnConfidentialityImpact")]
-        public string VulnConfidentialityImpact { get; set; }
-
-        /// <summary>
-        /// 漏洞完整性影響
-        /// </summary>
-        [JsonProperty("vulnIntegrityImpact")]
-        public string VulnIntegrityImpact { get; set; }
-
-        /// <summary>
-        /// 漏洞應對努力
-        /// </summary>
-        [JsonProperty("vulnerabilityResponseEffort")]
-        public string VulnerabilityResponseEffort { get; set; }
-
-        /// <summary>
-        /// 價值密度
-        /// </summary>
-        [JsonProperty("valueDensity")]
-        public string ValueDensity { get; set; }
-
-        /// <summary>
-        /// 子可用性影響
-        /// </summary>
-        [JsonProperty("subAvailabilityImpact")]
-        public string SubAvailabilityImpact { get; set; }
-
-        /// <summary>
-        /// 子機密性影響
-        /// </summary>
-        [JsonProperty("subConfidentialityImpact")]
-        public string SubConfidentialityImpact { get; set; }
-
-        /// <summary>
-        /// 子完整性影響
-        /// </summary>
-        [JsonProperty("subIntegrityImpact")]
-        public string SubIntegrityImpact { get; set; }
+        public ProviderMetadata ProviderMetadata { get; set; }
     }
 
     /// <summary>
@@ -732,20 +223,385 @@ public class Cve
         /// <summary>
         /// 組織 ID
         /// </summary>
-        [JsonProperty("orgId")]
         public string OrgId { get; set; }
 
         /// <summary>
-        /// 簡稱
+        /// 組織簡稱
         /// </summary>
-        [JsonProperty("shortName")]
         public string ShortName { get; set; }
+
+        /// <summary>
+        /// 最後更新日期
+        /// </summary>
+        public DateTime? DateUpdated { get; set; }
+    }
+
+    /// <summary>
+    /// 核心 CVE 記錄資訊
+    /// </summary>
+    public class CveRecord
+    {
+        /// <summary>
+        /// CVE 識別碼
+        /// </summary>
+        public string CveId { get; set; }
+
+        /// <summary>
+        /// CVE 標題
+        /// </summary>
+        public string Title { get; set; }
+
+        /// <summary>
+        /// 公開日期
+        /// </summary>
+        public DateTime? DatePublished { get; set; }
+
+        /// <summary>
+        /// 保留日期
+        /// </summary>
+        public DateTime? DateReserved { get; set; }
 
         /// <summary>
         /// 更新日期
         /// </summary>
-        [JsonProperty("dateUpdated")]
         public DateTime? DateUpdated { get; set; }
+
+        /// <summary>
+        /// 公開披露日期
+        /// </summary>
+        public DateTime? DatePublic { get; set; }
+
+        /// <summary>
+        /// 拒絕日期
+        /// </summary>
+        public DateTime? DateRejected { get; set; }
+
+        /// <summary>
+        /// 分配機構的組織 ID
+        /// </summary>
+        public string AssignerOrgId { get; set; }
+
+        /// <summary>
+        /// 分配機構的簡稱
+        /// </summary>
+        public string AssignerShortName { get; set; }
+
+        /// <summary>
+        /// CVE 記錄狀態
+        /// </summary>
+        public string State { get; set; }
+
+        /// <summary>
+        /// 漏洞發現方式
+        /// </summary>
+        public string Discovery { get; set; }
+    }
+
+    /// <summary>
+    /// 受影響的產品詳細資訊
+    /// </summary>
+    public class CveAffectedProduct
+    {
+        /// <summary>
+        /// CVE 識別碼
+        /// </summary>
+        public string CveId { get; set; }
+
+        /// <summary>
+        /// 廠商名稱
+        /// </summary>
+        public string Vendor { get; set; }
+
+        /// <summary>
+        /// 產品名稱
+        /// </summary>
+        public string Product { get; set; }
+
+        /// <summary>
+        /// 預設狀態
+        /// </summary>
+        public string DefaultStatus { get; set; }
+
+        /// <summary>
+        /// 程式碼儲存庫
+        /// </summary>
+        public string Repo { get; set; }
+
+        /// <summary>
+        /// CPE (Common Platform Enumeration) 列表
+        /// </summary>
+        public List<string> Cpes { get; set; }
+
+        /// <summary>
+        /// 集合 URL
+        /// </summary>
+        public string CollectionUrl { get; set; }
+
+        /// <summary>
+        /// 套件名稱
+        /// </summary>
+        public string PackageName { get; set; }
+
+        /// <summary>
+        /// 模組列表
+        /// </summary>
+        public List<string> Modules { get; set; }
+    }
+
+    /// <summary>
+    /// 版本詳細資訊
+    /// </summary>
+    public class CveVersion
+    {
+        /// <summary>
+        /// CVE 識別碼
+        /// </summary>
+        public string CveId { get; set; }
+
+        /// <summary>
+        /// 產品名稱
+        /// </summary>
+        public string Product { get; set; }
+
+        /// <summary>
+        /// 版本號
+        /// </summary>
+        public string Version { get; set; }
+
+        /// <summary>
+        /// 版本狀態
+        /// </summary>
+        public string Status { get; set; }
+
+        /// <summary>
+        /// 小於的版本範圍
+        /// </summary>
+        public string LessThan { get; set; }
+
+        /// <summary>
+        /// 小於等於的版本範圍
+        /// </summary>
+        public string LessThanOrEqual { get; set; }
+
+        /// <summary>
+        /// 版本類型
+        /// </summary>
+        public string VersionType { get; set; }
+
+        /// <summary>
+        /// 變更時間
+        /// </summary>
+        public string ChangeAt { get; set; }
+
+        /// <summary>
+        /// 變更狀態
+        /// </summary>
+        public string ChangeStatus { get; set; }
+    }
+
+    /// <summary>
+    /// CVE 相關模組
+    /// </summary>
+    public class CveModule
+    {
+        /// <summary>
+        /// CVE 識別碼
+        /// </summary>
+        public string CveId { get; set; }
+
+        /// <summary>
+        /// 模組名稱
+        /// </summary>
+        public string ModuleName { get; set; }
+    }
+
+    /// <summary>
+    /// CVE 描述
+    /// </summary>
+    public class Description
+    {
+        /// <summary>
+        /// CVE 識別碼
+        /// </summary>
+        public string CveId { get; set; }
+
+        /// <summary>
+        /// 描述語言
+        /// </summary>
+        public string Language { get; set; }
+
+        /// <summary>
+        /// 描述文字內容
+        /// </summary>
+        [JsonProperty("value")]
+        public string DescriptionText { get; set; }
+
+        /// <summary>
+        /// 支援媒體列表
+        /// </summary>
+        public List<CveSupportingMedia> SupportingMedia { get; set; }
+    }
+
+    /// <summary>
+    /// CVE 支援媒體
+    /// </summary>
+    public class CveSupportingMedia
+    {
+        /// <summary>
+        /// CVE 識別碼
+        /// </summary>
+        public string CveId { get; set; }
+
+        /// <summary>
+        /// 媒體語言
+        /// </summary>
+        public string Language { get; set; }
+
+        /// <summary>
+        /// 媒體類型
+        /// </summary>
+        public string Type { get; set; }
+
+        /// <summary>
+        /// 是否為 Base64 編碼
+        /// </summary>
+        public bool Base64 { get; set; }
+
+        /// <summary>
+        /// 媒體內容值
+        /// </summary>
+        public string Value { get; set; }
+    }
+
+    /// <summary>
+    /// CVSS 評分資訊
+    /// </summary>
+    public class CveCvssScore
+    {
+        /// <summary>
+        /// CVE 識別碼
+        /// </summary>
+        public string CveId { get; set; }
+
+        /// <summary>
+        /// 評分格式
+        /// </summary>
+        public string Format { get; set; }
+
+        /// <summary>
+        /// 評分情境
+        /// </summary>
+        public string Scenario { get; set; }
+
+        /// <summary>
+        /// CVSS 版本
+        /// </summary>
+        public string Version { get; set; }
+
+        /// <summary>
+        /// 基本分數
+        /// </summary>
+        public double BaseScore { get; set; }
+
+        /// <summary>
+        /// 基本嚴重性等級
+        /// </summary>
+        public string BaseSeverity { get; set; }
+
+        /// <summary>
+        /// 向量字串
+        /// </summary>
+        public string VectorString { get; set; }
+
+        /// <summary>
+        /// 攻擊途徑
+        /// </summary>
+        public string AttackVector { get; set; }
+
+        /// <summary>
+        /// 攻擊複雜度
+        /// </summary>
+        public string AttackComplexity { get; set; }
+
+        /// <summary>
+        /// 所需權限
+        /// </summary>
+        public string PrivilegesRequired { get; set; }
+
+        /// <summary>
+        /// 使用者互動
+        /// </summary>
+        public string UserInteraction { get; set; }
+
+        /// <summary>
+        /// 影響範圍
+        /// </summary>
+        public string Scope { get; set; }
+
+        /// <summary>
+        /// 機密性影響
+        /// </summary>
+        public string ConfidentialityImpact { get; set; }
+
+        /// <summary>
+        /// 完整性影響
+        /// </summary>
+        public string IntegrityImpact { get; set; }
+
+        /// <summary>
+        /// 可用性影響
+        /// </summary>
+        public string AvailabilityImpact { get; set; }
+
+        /// <summary>
+        /// 是否可自動化利用
+        /// </summary>
+        public string Automatable { get; set; }
+
+        /// <summary>
+        /// 復原難度
+        /// </summary>
+        public string Recovery { get; set; }
+
+        /// <summary>
+        /// 安全性影響
+        /// </summary>
+        public string Safety { get; set; }
+
+        /// <summary>
+        /// 攻擊需求
+        /// </summary>
+        public string AttackRequirements { get; set; }
+
+        /// <summary>
+        /// 提供者緊急程度
+        /// </summary>
+        public string ProviderUrgency { get; set; }
+
+        /// <summary>
+        /// 次要機密性影響
+        /// </summary>
+        public string SubConfidentialityImpact { get; set; }
+
+        /// <summary>
+        /// 次要完整性影響
+        /// </summary>
+        public string SubIntegrityImpact { get; set; }
+
+        /// <summary>
+        /// 次要可用性影響
+        /// </summary>
+        public string SubAvailabilityImpact { get; set; }
+
+        /// <summary>
+        /// 價值密度
+        /// </summary>
+        public string ValueDensity { get; set; }
+
+        /// <summary>
+        /// 漏洞回應所需努力
+        /// </summary>
+        public string VulnerabilityResponseEffort { get; set; }
     }
 
     /// <summary>
@@ -754,9 +610,8 @@ public class Cve
     public class ProblemType
     {
         /// <summary>
-        /// 描述列表
+        /// 問題類型描述列表
         /// </summary>
-        [JsonProperty("descriptions")]
         public List<ProblemTypeDescription> Descriptions { get; set; }
     }
 
@@ -766,225 +621,260 @@ public class Cve
     public class ProblemTypeDescription
     {
         /// <summary>
-        /// 語言
+        /// CVE 識別碼
         /// </summary>
-        [JsonProperty("lang")]
-        public string Lang { get; set; }
+        public string CveId { get; set; }
 
         /// <summary>
-        /// 描述
+        /// CWE 識別碼，如 CWE-79
         /// </summary>
-        [JsonProperty("description")]
-        public string Description { get; set; }
-
-        /// <summary>
-        /// CWE ID
-        /// </summary>
-        [JsonProperty("cweId")]
         public string CweId { get; set; }
 
         /// <summary>
-        /// 類型
+        /// 問題描述
         /// </summary>
-        [JsonProperty("type")]
+        public string Description { get; set; }
+
+        /// <summary>
+        /// 描述語言
+        /// </summary>
+        public string Language { get; set; }
+
+        /// <summary>
+        /// 描述類型
+        /// </summary>
         public string Type { get; set; }
     }
 
     /// <summary>
-    /// 影響
+    /// CNA 中的評分指標
     /// </summary>
-    public class Impact
+    public class Metric
     {
         /// <summary>
-        /// CAPEC ID
+        /// CVSS v4.0 評分
         /// </summary>
-        [JsonProperty("capecId")]
-        public string CapecId { get; set; }
+        public CvssV4_0 CvssV4_0 { get; set; }
 
         /// <summary>
-        /// 描述列表
+        /// CVSS v3.1 評分
         /// </summary>
-        [JsonProperty("descriptions")]
-        public List<ImpactDescription> Descriptions { get; set; }
+        public CvssV3_1 CvssV3_1 { get; set; }
+
+        /// <summary>
+        /// CVSS v3.0 評分
+        /// </summary>
+        public CvssV3_0 CvssV3_0 { get; set; }
+
+        /// <summary>
+        /// CVSS v2.0 評分
+        /// </summary>
+        public CvssV2_0 CvssV2_0 { get; set; }
     }
 
     /// <summary>
-    /// 影響描述
+    /// CVSS v4.0 評分
     /// </summary>
-    public class ImpactDescription
+    public class CvssV4_0
     {
         /// <summary>
-        /// 語言
+        /// CVSS 版本
         /// </summary>
-        [JsonProperty("lang")]
-        public string Lang { get; set; }
+        public string Version { get; set; }
 
         /// <summary>
-        /// 描述內容
+        /// 基本分數
         /// </summary>
-        [JsonProperty("value")]
-        public string Value { get; set; }
+        public double BaseScore { get; set; }
+
+        /// <summary>
+        /// 向量字串
+        /// </summary>
+        public string VectorString { get; set; }
+
+        /// <summary>
+        /// 基本嚴重性等級
+        /// </summary>
+        public string BaseSeverity { get; set; }
     }
 
     /// <summary>
-    /// 漏洞描述
+    /// CVSS v3.1 評分
     /// </summary>
-    public class Description
+    public class CvssV3_1
     {
         /// <summary>
-        /// 語言
+        /// CVSS 版本
         /// </summary>
-        [JsonProperty("lang")]
-        public string Lang { get; set; }
+        public string Version { get; set; }
 
         /// <summary>
-        /// 描述內容
+        /// 基本分數
         /// </summary>
-        [JsonProperty("value")]
-        public string Value { get; set; }
+        public double BaseScore { get; set; }
 
         /// <summary>
-        /// 支援媒體
+        /// 向量字串
         /// </summary>
-        [JsonProperty("supportingMedia")]
-        public List<SupportingMedia> SupportingMedia { get; set; }
+        public string VectorString { get; set; }
+
+        /// <summary>
+        /// 基本嚴重性等級
+        /// </summary>
+        public string BaseSeverity { get; set; }
     }
 
     /// <summary>
-    /// 支援媒體
+    /// CVSS v3.0 評分
     /// </summary>
-    public class SupportingMedia
+    public class CvssV3_0
     {
         /// <summary>
-        /// 是否為 Base64 編碼
+        /// CVSS 版本
         /// </summary>
-        [JsonProperty("base64")]
-        public bool Base64 { get; set; }
+        public string Version { get; set; }
 
         /// <summary>
-        /// 媒體類型
+        /// 基本分數
         /// </summary>
-        [JsonProperty("type")]
+        public double BaseScore { get; set; }
+
+        /// <summary>
+        /// 向量字串
+        /// </summary>
+        public string VectorString { get; set; }
+
+        /// <summary>
+        /// 基本嚴重性等級
+        /// </summary>
+        public string BaseSeverity { get; set; }
+    }
+
+    /// <summary>
+    /// CVSS v2.0 評分
+    /// </summary>
+    public class CvssV2_0
+    {
+        /// <summary>
+        /// CVSS 版本
+        /// </summary>
+        public string Version { get; set; }
+
+        /// <summary>
+        /// 基本分數
+        /// </summary>
+        public double BaseScore { get; set; }
+
+        /// <summary>
+        /// 向量字串
+        /// </summary>
+        public string VectorString { get; set; }
+    }
+
+    /// <summary>
+    /// ADP 中的評分指標
+    /// </summary>
+    public class AdpMetric
+    {
+        /// <summary>
+        /// SSVC (Stakeholder-Specific Vulnerability Categorization) 評分
+        /// </summary>
+        public Ssvc Other { get; set; }
+    }
+
+    /// <summary>
+    /// SSVC 評分
+    /// </summary>
+    public class Ssvc
+    {
+        /// <summary>
+        /// SSVC 類型
+        /// </summary>
         public string Type { get; set; }
 
         /// <summary>
-        /// 媒體內容
+        /// SSVC 內容
         /// </summary>
-        [JsonProperty("value")]
+        public SsvcContent Content { get; set; }
+    }
+
+    /// <summary>
+    /// SSVC 內容
+    /// </summary>
+    public class SsvcContent
+    {
+        /// <summary>
+        /// SSVC 識別碼
+        /// </summary>
+        public string Id { get; set; }
+
+        /// <summary>
+        /// 時間戳記
+        /// </summary>
+        public DateTime Timestamp { get; set; }
+
+        /// <summary>
+        /// SSVC 選項列表
+        /// </summary>
+        public List<SsvcOption> Options { get; set; }
+
+        /// <summary>
+        /// 角色
+        /// </summary>
+        public string Role { get; set; }
+
+        /// <summary>
+        /// SSVC 版本
+        /// </summary>
+        public string Version { get; set; }
+    }
+
+    /// <summary>
+    /// SSVC 選項
+    /// </summary>
+    public class SsvcOption
+    {
+        /// <summary>
+        /// 利用狀態
+        /// </summary>
+        public string Exploitation { get; set; }
+
+        /// <summary>
+        /// 是否可自動化利用
+        /// </summary>
+        public string Automatable { get; set; }
+
+        /// <summary>
+        /// 技術影響
+        /// </summary>
+        [JsonProperty("Technical Impact")]
+        public string TechnicalImpact { get; set; }
+    }
+
+    /// <summary>
+    /// 時間線事件
+    /// </summary>
+    public class TimelineEntry
+    {
+        /// <summary>
+        /// CVE 識別碼
+        /// </summary>
+        public string CveId { get; set; }
+
+        /// <summary>
+        /// 事件時間
+        /// </summary>
+        public DateTime Time { get; set; }
+
+        /// <summary>
+        /// 事件描述語言
+        /// </summary>
+        public string Language { get; set; }
+
+        /// <summary>
+        /// 事件描述內容
+        /// </summary>
         public string Value { get; set; }
-    }
-
-    /// <summary>
-    /// 評分場景
-    /// </summary>
-    public class Scenario
-    {
-        /// <summary>
-        /// 語言
-        /// </summary>
-        [JsonProperty("lang")]
-        public string Lang { get; set; }
-
-        /// <summary>
-        /// 場景值
-        /// </summary>
-        [JsonProperty("value")]
-        public string Value { get; set; }
-    }
-
-    /// <summary>
-    /// 解決方案
-    /// </summary>
-    public class Solution
-    {
-        /// <summary>
-        /// 語言
-        /// </summary>
-        [JsonProperty("lang")]
-        public string Lang { get; set; }
-
-        /// <summary>
-        /// 解決方案內容
-        /// </summary>
-        [JsonProperty("value")]
-        public string Value { get; set; }
-
-        /// <summary>
-        /// 支援媒體
-        /// </summary>
-        [JsonProperty("supportingMedia")]
-        public List<SupportingMedia> SupportingMedia { get; set; }
-    }
-
-    /// <summary>
-    /// 臨時解決方法
-    /// </summary>
-    public class Workaround
-    {
-        /// <summary>
-        /// 語言
-        /// </summary>
-        [JsonProperty("lang")]
-        public string Lang { get; set; }
-
-        /// <summary>
-        /// 解決方法內容
-        /// </summary>
-        [JsonProperty("value")]
-        public string Value { get; set; }
-
-        /// <summary>
-        /// 支援媒體
-        /// </summary>
-        [JsonProperty("supportingMedia")]
-        public List<SupportingMedia> SupportingMedia { get; set; }
-    }
-
-    /// <summary>
-    /// 參考資料
-    /// </summary>
-    public class Reference
-    {
-        public Reference(string url)
-        {
-            Url = url;
-        }
-
-        /// <summary>
-        /// URL
-        /// </summary>
-        [JsonProperty("url")]
-        public string Url { get; set; }
-
-        /// <summary>
-        /// 名稱
-        /// </summary>
-        [JsonProperty("name")]
-        public string Name { get; set; }
-
-        /// <summary>
-        /// 標籤
-        /// </summary>
-        [JsonProperty("tags")]
-        public List<string> Tags { get; set; }
-    }
-
-    /// <summary>
-    /// 來源資訊
-    /// </summary>
-    public class Source
-    {
-        /// <summary>
-        /// 發現方式
-        /// </summary>
-        [JsonProperty("discovery")]
-        public string Discovery { get; set; }
-
-        /// <summary>
-        /// 公告
-        /// </summary>
-        [JsonProperty("advisory")]
-        public string Advisory { get; set; }
     }
 
     /// <summary>
@@ -993,81 +883,97 @@ public class Cve
     public class Credit
     {
         /// <summary>
-        /// 語言
+        /// CVE 識別碼
         /// </summary>
-        [JsonProperty("lang")]
-        public string Lang { get; set; }
+        public string CveId { get; set; }
 
         /// <summary>
-        /// 貢獻者名稱
+        /// 貢獻者描述語言
         /// </summary>
-        [JsonProperty("value")]
-        public string Value { get; set; }
+        public string Language { get; set; }
 
         /// <summary>
         /// 貢獻類型
         /// </summary>
-        [JsonProperty("type")]
         public string Type { get; set; }
-    }
-
-    /// <summary>
-    /// 配置資訊
-    /// </summary>
-    public class Configuration
-    {
-        /// <summary>
-        /// 語言
-        /// </summary>
-        [JsonProperty("lang")]
-        public string Lang { get; set; }
 
         /// <summary>
-        /// 配置內容
+        /// 貢獻者資訊
         /// </summary>
-        [JsonProperty("value")]
         public string Value { get; set; }
     }
 
     /// <summary>
-    /// 時間線
+    /// 參考資料
     /// </summary>
-    public class Timeline
+    public class Reference
     {
         /// <summary>
-        /// 時間
+        /// CVE 識別碼
         /// </summary>
-        [JsonProperty("time")]
-        public DateTime? Time { get; set; }
+        public string CveId { get; set; }
 
         /// <summary>
-        /// 語言
+        /// 參考資料 URL
         /// </summary>
-        [JsonProperty("lang")]
-        public string Lang { get; set; }
+        public string Url { get; set; }
 
         /// <summary>
-        /// 事件描述
+        /// 參考資料名稱
         /// </summary>
-        [JsonProperty("value")]
-        public string Value { get; set; }
+        public string Name { get; set; }
+
+        /// <summary>
+        /// 參考資料標籤列表
+        /// </summary>
+        public List<string> Tags { get; set; }
     }
 
     /// <summary>
-    /// 產生器資訊
+    /// CVE 平台資訊（保留以供未來擴展）
     /// </summary>
-    public class Generator
+    public class CvePlatform
     {
         /// <summary>
-        /// 引擎
+        /// CVE 識別碼
         /// </summary>
-        [JsonProperty("engine")]
-        public string Engine { get; set; }
+        public string CveId { get; set; }
 
         /// <summary>
-        /// 日期
+        /// 平台名稱
         /// </summary>
-        [JsonProperty("date")]
-        public DateTime? Date { get; set; }
+        public string Platform { get; set; }
+    }
+
+    /// <summary>
+    /// CVE 程式檔案資訊（保留以供未來擴展）
+    /// </summary>
+    public class CveProgramFile
+    {
+        /// <summary>
+        /// CVE 識別碼
+        /// </summary>
+        public string CveId { get; set; }
+
+        /// <summary>
+        /// 檔案路徑
+        /// </summary>
+        public string FilePath { get; set; }
+    }
+
+    /// <summary>
+    /// CVE 程式例程資訊（保留以供未來擴展）
+    /// </summary>
+    public class CveProgramRoutine
+    {
+        /// <summary>
+        /// CVE 識別碼
+        /// </summary>
+        public string CveId { get; set; }
+
+        /// <summary>
+        /// 例程名稱
+        /// </summary>
+        public string RoutineName { get; set; }
     }
 }
