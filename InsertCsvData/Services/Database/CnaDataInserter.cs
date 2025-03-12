@@ -1,38 +1,40 @@
+using InsertCsvData.Interfaces;
 using InsertCsvData.Models;
-using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace InsertCsvData.Services.Database;
 
 public class CnaDataInserter
 {
-    private readonly string _connectionString;
+    private readonly IDbConnectionFactory _connectionFactory;
 
-    public CnaDataInserter(string connectionString)
+    public CnaDataInserter(IDbConnectionFactory connectionFactory)
     {
-        _connectionString = connectionString;
+        _connectionFactory = connectionFactory;
     }
 
     public int InsertCnaContainer(Cve.CnaContainer cna)
     {
-        using var connection = new SqlConnection(_connectionString);
+        using var connection = _connectionFactory.CreateConnection();
         connection.Open();
 
         var providerMetadataId = InsertProviderMetadata(cna.ProviderMetadata, connection);
 
-        var sql = @"
-            INSERT INTO [CnaContainer] ([ProviderMetadataId], [Title])
+        var sql = $@"
+            INSERT INTO CnaContainer (ProviderMetadataId, Title)
             VALUES (@ProviderMetadataId, @Title);
-            SELECT SCOPE_IDENTITY();";
+            {_connectionFactory.GetLastInsertIdCommand()}";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@ProviderMetadataId", providerMetadataId);
-        command.Parameters.AddWithValue("@Title", (object)cna.Title ?? DBNull.Value);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@ProviderMetadataId", providerMetadataId));
+        command.Parameters.Add(CreateParameter(command, "@Title", (object)cna.Title ?? DBNull.Value));
         return Convert.ToInt32(command.ExecuteScalar());
     }
 
     public void InsertCnaRelatedData(Cve.CnaContainer cna, int cnaId)
     {
-        using var connection = new SqlConnection(_connectionString);
+        using var connection = _connectionFactory.CreateConnection();
         connection.Open();
 
         if (cna.Affected != null)
@@ -60,33 +62,35 @@ public class CnaDataInserter
                 InsertReference(reference, cnaId, connection);
     }
 
-    private int InsertProviderMetadata(Cve.ProviderMetadata metadata, SqlConnection connection)
+    private int InsertProviderMetadata(Cve.ProviderMetadata metadata, IDbConnection connection)
     {
         if (metadata == null) return -1;
 
-        var sql = @"
-            INSERT INTO [ProviderMetadata] ([OrgId], [ShortName], [DateUpdated])
+        var sql = $@"
+            INSERT INTO ProviderMetadata (OrgId, ShortName, DateUpdated)
             VALUES (@OrgId, @ShortName, @DateUpdated);
-            SELECT SCOPE_IDENTITY();";
+            {_connectionFactory.GetLastInsertIdCommand()}";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@OrgId", (object)metadata.OrgId ?? DBNull.Value);
-        command.Parameters.AddWithValue("@ShortName", (object)metadata.ShortName ?? DBNull.Value);
-        command.Parameters.AddWithValue("@DateUpdated", (object)metadata.DateUpdated ?? DBNull.Value);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@OrgId", (object)metadata.OrgId ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@ShortName", (object)metadata.ShortName ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@DateUpdated", (object)metadata.DateUpdated ?? DBNull.Value));
         return Convert.ToInt32(command.ExecuteScalar());
     }
 
-    private void InsertAffected(Cve.Affected affected, int cnaId, SqlConnection connection)
+    private void InsertAffected(Cve.Affected affected, int cnaId, IDbConnection connection)
     {
-        var sql = @"
-            INSERT INTO [Affected] ([CnaId], [Vendor], [Product])
+        var sql = $@"
+            INSERT INTO Affected (CnaId, Vendor, Product)
             VALUES (@CnaId, @Vendor, @Product);
-            SELECT SCOPE_IDENTITY();";
+            {_connectionFactory.GetLastInsertIdCommand()}";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@CnaId", cnaId);
-        command.Parameters.AddWithValue("@Vendor", (object)affected.Vendor ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Product", (object)affected.Product ?? DBNull.Value);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@CnaId", cnaId));
+        command.Parameters.Add(CreateParameter(command, "@Vendor", (object)affected.Vendor ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@Product", (object)affected.Product ?? DBNull.Value));
         int affectedId = Convert.ToInt32(command.ExecuteScalar());
 
         if (affected.Versions != null)
@@ -98,55 +102,59 @@ public class CnaDataInserter
                 InsertModule(module, affectedId, connection);
     }
 
-    private void InsertVersion(Cve.Version version, int affectedId, SqlConnection connection)
+    private void InsertVersion(Cve.Version version, int affectedId, IDbConnection connection)
     {
         var sql = @"
-            INSERT INTO [Versions] ([AffectedId], [VersionValue], [Status], [LessThanOrEqual], [VersionType])
+            INSERT INTO Versions (AffectedId, VersionValue, Status, LessThanOrEqual, VersionType)
             VALUES (@AffectedId, @VersionValue, @Status, @LessThanOrEqual, @VersionType);";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@AffectedId", affectedId);
-        command.Parameters.AddWithValue("@VersionValue", (object)version.VersionValue ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Status", (object)version.Status ?? DBNull.Value);
-        command.Parameters.AddWithValue("@LessThanOrEqual", (object)version.LessThanOrEqual ?? DBNull.Value);
-        command.Parameters.AddWithValue("@VersionType", (object)version.VersionType ?? DBNull.Value);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@AffectedId", affectedId));
+        command.Parameters.Add(CreateParameter(command, "@VersionValue", (object)version.VersionValue ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@Status", (object)version.Status ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@LessThanOrEqual", (object)version.LessThanOrEqual ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@VersionType", (object)version.VersionType ?? DBNull.Value));
         command.ExecuteNonQuery();
     }
 
-    private void InsertModule(string moduleName, int affectedId, SqlConnection connection)
+    private void InsertModule(string moduleName, int affectedId, IDbConnection connection)
     {
         var sql = @"
-            INSERT INTO [Modules] ([AffectedId], [ModuleName])
+            INSERT INTO Modules (AffectedId, ModuleName)
             VALUES (@AffectedId, @ModuleName);";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@AffectedId", affectedId);
-        command.Parameters.AddWithValue("@ModuleName", (object)moduleName ?? DBNull.Value);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@AffectedId", affectedId));
+        command.Parameters.Add(CreateParameter(command, "@ModuleName", (object)moduleName ?? DBNull.Value));
         command.ExecuteNonQuery();
     }
 
-    private void InsertDescription(Cve.Description desc, int cnaId, SqlConnection connection)
+    private void InsertDescription(Cve.Description desc, int cnaId, IDbConnection connection)
     {
         var sql = @"
-            INSERT INTO [Description] ([CveId], [Language], [DescriptionText])
+            INSERT INTO Description (CveId, Language, DescriptionText)
             VALUES (@CveId, @Language, @DescriptionText);";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@CveId", (object)desc.CveId ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Language", (object)desc.Language ?? DBNull.Value);
-        command.Parameters.AddWithValue("@DescriptionText", (object)desc.DescriptionText ?? DBNull.Value);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@CveId", (object)desc.CveId ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@Language", (object)desc.Language ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@DescriptionText", (object)desc.DescriptionText ?? DBNull.Value));
         command.ExecuteNonQuery();
     }
 
-    private void InsertMetric(Cve.Metric metric, int cnaId, SqlConnection connection)
+    private void InsertMetric(Cve.Metric metric, int cnaId, IDbConnection connection)
     {
-        var sql = @"
-            INSERT INTO [Metric] ([CnaId])
+        var sql = $@"
+            INSERT INTO Metric (CnaId)
             VALUES (@CnaId);
-            SELECT SCOPE_IDENTITY();";
+            {_connectionFactory.GetLastInsertIdCommand()}";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@CnaId", cnaId);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@CnaId", cnaId));
         int metricId = Convert.ToInt32(command.ExecuteScalar());
 
         if (metric.CvssV4_0 != null) InsertCvssV4_0(metric.CvssV4_0, metricId, connection);
@@ -155,107 +163,114 @@ public class CnaDataInserter
         if (metric.CvssV2_0 != null) InsertCvssV2_0(metric.CvssV2_0, metricId, connection);
     }
 
-    private void InsertCvssV4_0(Cve.CvssV4_0 cvss, int metricId, SqlConnection connection)
+    private void InsertCvssV4_0(Cve.CvssV4_0 cvss, int metricId, IDbConnection connection)
     {
         var sql = @"
-            INSERT INTO [CvssV4_0] ([MetricId], [Version], [BaseScore], [VectorString], [BaseSeverity])
+            INSERT INTO CvssV4_0 (MetricId, Version, BaseScore, VectorString, BaseSeverity)
             VALUES (@MetricId, @Version, @BaseScore, @VectorString, @BaseSeverity);";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@MetricId", metricId);
-        command.Parameters.AddWithValue("@Version", (object)cvss.Version ?? DBNull.Value);
-        command.Parameters.AddWithValue("@BaseScore", cvss.BaseScore);
-        command.Parameters.AddWithValue("@VectorString", (object)cvss.VectorString ?? DBNull.Value);
-        command.Parameters.AddWithValue("@BaseSeverity", (object)cvss.BaseSeverity ?? DBNull.Value);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@MetricId", metricId));
+        command.Parameters.Add(CreateParameter(command, "@Version", (object)cvss.Version ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@BaseScore", cvss.BaseScore));
+        command.Parameters.Add(CreateParameter(command, "@VectorString", (object)cvss.VectorString ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@BaseSeverity", (object)cvss.BaseSeverity ?? DBNull.Value));
         command.ExecuteNonQuery();
     }
 
-    private void InsertCvssV3_1(Cve.CvssV3_1 cvss, int metricId, SqlConnection connection)
+    private void InsertCvssV3_1(Cve.CvssV3_1 cvss, int metricId, IDbConnection connection)
     {
         var sql = @"
-            INSERT INTO [CvssV3_1] ([MetricId], [Version], [BaseScore], [VectorString], [BaseSeverity])
+            INSERT INTO CvssV3_1 (MetricId, Version, BaseScore, VectorString, BaseSeverity)
             VALUES (@MetricId, @Version, @BaseScore, @VectorString, @BaseSeverity);";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@MetricId", metricId);
-        command.Parameters.AddWithValue("@Version", (object)cvss.Version ?? DBNull.Value);
-        command.Parameters.AddWithValue("@BaseScore", cvss.BaseScore);
-        command.Parameters.AddWithValue("@VectorString", (object)cvss.VectorString ?? DBNull.Value);
-        command.Parameters.AddWithValue("@BaseSeverity", (object)cvss.BaseSeverity ?? DBNull.Value);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@MetricId", metricId));
+        command.Parameters.Add(CreateParameter(command, "@Version", (object)cvss.Version ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@BaseScore", cvss.BaseScore));
+        command.Parameters.Add(CreateParameter(command, "@VectorString", (object)cvss.VectorString ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@BaseSeverity", (object)cvss.BaseSeverity ?? DBNull.Value));
         command.ExecuteNonQuery();
     }
 
-    private void InsertCvssV3_0(Cve.CvssV3_0 cvss, int metricId, SqlConnection connection)
+    private void InsertCvssV3_0(Cve.CvssV3_0 cvss, int metricId, IDbConnection connection)
     {
         var sql = @"
-            INSERT INTO [CvssV3_0] ([MetricId], [Version], [BaseScore], [VectorString], [BaseSeverity])
+            INSERT INTO CvssV3_0 (MetricId, Version, BaseScore, VectorString, BaseSeverity)
             VALUES (@MetricId, @Version, @BaseScore, @VectorString, @BaseSeverity);";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@MetricId", metricId);
-        command.Parameters.AddWithValue("@Version", (object)cvss.Version ?? DBNull.Value);
-        command.Parameters.AddWithValue("@BaseScore", cvss.BaseScore);
-        command.Parameters.AddWithValue("@VectorString", (object)cvss.VectorString ?? DBNull.Value);
-        command.Parameters.AddWithValue("@BaseSeverity", (object)cvss.BaseSeverity ?? DBNull.Value);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@MetricId", metricId));
+        command.Parameters.Add(CreateParameter(command, "@Version", (object)cvss.Version ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@BaseScore", cvss.BaseScore));
+        command.Parameters.Add(CreateParameter(command, "@VectorString", (object)cvss.VectorString ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@BaseSeverity", (object)cvss.BaseSeverity ?? DBNull.Value));
         command.ExecuteNonQuery();
     }
 
-    private void InsertCvssV2_0(Cve.CvssV2_0 cvss, int metricId, SqlConnection connection)
+    private void InsertCvssV2_0(Cve.CvssV2_0 cvss, int metricId, IDbConnection connection)
     {
         var sql = @"
-            INSERT INTO [CvssV2_0] ([MetricId], [Version], [BaseScore], [VectorString])
+            INSERT INTO CvssV2_0 (MetricId, Version, BaseScore, VectorString)
             VALUES (@MetricId, @Version, @BaseScore, @VectorString);";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@MetricId", metricId);
-        command.Parameters.AddWithValue("@Version", (object)cvss.Version ?? DBNull.Value);
-        command.Parameters.AddWithValue("@BaseScore", cvss.BaseScore);
-        command.Parameters.AddWithValue("@VectorString", (object)cvss.VectorString ?? DBNull.Value);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@MetricId", metricId));
+        command.Parameters.Add(CreateParameter(command, "@Version", (object)cvss.Version ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@BaseScore", cvss.BaseScore));
+        command.Parameters.Add(CreateParameter(command, "@VectorString", (object)cvss.VectorString ?? DBNull.Value));
         command.ExecuteNonQuery();
     }
 
-    private void InsertTimelineEntry(Cve.TimelineEntry timeline, int cnaId, SqlConnection connection)
+    private void InsertTimelineEntry(Cve.TimelineEntry timeline, int cnaId, IDbConnection connection)
     {
         var sql = @"
-            INSERT INTO [TimelineEntry] ([CnaId], [CveId], [Time], [Language], [Value])
+            INSERT INTO TimelineEntry (CnaId, CveId, Time, Language, Value)
             VALUES (@CnaId, @CveId, @Time, @Language, @Value);";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@CnaId", cnaId);
-        command.Parameters.AddWithValue("@CveId", (object)timeline.CveId ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Time", timeline.Time);
-        command.Parameters.AddWithValue("@Language", (object)timeline.Language ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Value", (object)timeline.Value ?? DBNull.Value);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@CnaId", cnaId));
+        command.Parameters.Add(CreateParameter(command, "@CveId", (object)timeline.CveId ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@Time", timeline.Time));
+        command.Parameters.Add(CreateParameter(command, "@Language", (object)timeline.Language ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@Value", (object)timeline.Value ?? DBNull.Value));
         command.ExecuteNonQuery();
     }
 
-    private void InsertCredit(Cve.Credit credit, int cnaId, SqlConnection connection)
+    private void InsertCredit(Cve.Credit credit, int cnaId, IDbConnection connection)
     {
         var sql = @"
-            INSERT INTO [Credit] ([CnaId], [CveId], [Language], [Type], [Value])
+            INSERT INTO Credit (CnaId, CveId, Language, Type, Value)
             VALUES (@CnaId, @CveId, @Language, @Type, @Value);";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@CnaId", cnaId);
-        command.Parameters.AddWithValue("@CveId", (object)credit.CveId ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Language", (object)credit.Language ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Type", (object)credit.Type ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Value", (object)credit.Value ?? DBNull.Value);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@CnaId", cnaId));
+        command.Parameters.Add(CreateParameter(command, "@CveId", (object)credit.CveId ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@Language", (object)credit.Language ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@Type", (object)credit.Type ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@Value", (object)credit.Value ?? DBNull.Value));
         command.ExecuteNonQuery();
     }
 
-    private void InsertReference(Cve.Reference reference, int cnaId, SqlConnection connection)
+    private void InsertReference(Cve.Reference reference, int cnaId, IDbConnection connection)
     {
-        var sql = @"
-            INSERT INTO [Reference] ([CnaId], [CveId], [Url], [Name])
+        var sql = $@"
+            INSERT INTO Reference (CnaId, CveId, Url, Name)
             VALUES (@CnaId, @CveId, @Url, @Name);
-            SELECT SCOPE_IDENTITY();";
+            {_connectionFactory.GetLastInsertIdCommand()}";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@CnaId", cnaId);
-        command.Parameters.AddWithValue("@CveId", (object)reference.CveId ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Url", (object)reference.Url ?? DBNull.Value);
-        command.Parameters.AddWithValue("@Name", (object)reference.Name ?? DBNull.Value);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@CnaId", cnaId));
+        command.Parameters.Add(CreateParameter(command, "@CveId", (object)reference.CveId ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@Url", (object)reference.Url ?? DBNull.Value));
+        command.Parameters.Add(CreateParameter(command, "@Name", (object)reference.Name ?? DBNull.Value));
         int referenceId = Convert.ToInt32(command.ExecuteScalar());
 
         if (reference.Tags != null)
@@ -263,15 +278,24 @@ public class CnaDataInserter
                 InsertReferenceTag(tag, referenceId, connection);
     }
 
-    private void InsertReferenceTag(string tag, int referenceId, SqlConnection connection)
+    private void InsertReferenceTag(string tag, int referenceId, IDbConnection connection)
     {
         var sql = @"
-            INSERT INTO [ReferenceTags] ([ReferenceId], [Tag])
+            INSERT INTO ReferenceTags (ReferenceId, Tag)
             VALUES (@ReferenceId, @Tag);";
 
-        using var command = new SqlCommand(sql, connection);
-        command.Parameters.AddWithValue("@ReferenceId", referenceId);
-        command.Parameters.AddWithValue("@Tag", (object)tag ?? DBNull.Value);
+        using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.Add(CreateParameter(command, "@ReferenceId", referenceId));
+        command.Parameters.Add(CreateParameter(command, "@Tag", (object)tag ?? DBNull.Value));
         command.ExecuteNonQuery();
+    }
+
+    private IDbDataParameter CreateParameter(IDbCommand command, string name, object value)
+    {
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = name;
+        parameter.Value = value;
+        return parameter;
     }
 }

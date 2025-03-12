@@ -40,7 +40,7 @@ CREATE TABLE CnaContainer
 (
     CnaId              INT PRIMARY KEY AUTO_INCREMENT, -- 主鍵，自增識別碼
     ProviderMetadataId INT,                            -- 提供者元資料 ID
-    Title              VARCHAR(255)                    -- CVE 標題
+    Title              VARCHAR(1000)                    -- CVE 標題
 );
 CREATE INDEX IX_CnaContainer_ProviderMetadataId ON CnaContainer (ProviderMetadataId);
 -- 為 ProviderMetadataId 建立索引
@@ -61,11 +61,10 @@ CREATE TABLE Affected
 (
     AffectedId INT PRIMARY KEY AUTO_INCREMENT, -- 主鍵，自增識別碼
     CnaId      INT,                            -- CNA 容器 ID
-    Vendor     VARCHAR(100),                   -- 廠商名稱
-    Product    VARCHAR(100)                    -- 產品名稱
+    Vendor     VARCHAR(500),                   -- 廠商名稱
+    Product    TEXT                   -- 產品名稱
 );
 CREATE INDEX IX_Affected_CnaId ON Affected (CnaId); -- 為 CnaId 建立索引
-CREATE INDEX IX_Affected_Vendor_Product ON Affected (Vendor, Product);
 -- 為 Vendor 和 Product 建立複合索引
 
 -- 7. Versions 表 - 儲存受影響產品的版本資訊
@@ -73,13 +72,12 @@ CREATE TABLE Versions
 (
     VersionId       INT PRIMARY KEY AUTO_INCREMENT, -- 主鍵，自增識別碼
     AffectedId      INT,                            -- 受影響產品 ID
-    VersionValue    VARCHAR(50),                    -- 版本值
+    VersionValue    TEXT,                    -- 版本值
     Status          VARCHAR(20),                    -- 版本狀態，如 "affected" 或 "unaffected"
-    LessThanOrEqual VARCHAR(50),                    -- 小於等於的版本範圍
+    LessThanOrEqual TEXT,                    -- 小於等於的版本範圍
     VersionType     VARCHAR(50)                     -- 版本類型
 );
 CREATE INDEX IX_Versions_AffectedId ON Versions (AffectedId); -- 為 AffectedId 建立索引
-CREATE INDEX IX_Versions_VersionValue ON Versions (VersionValue);
 -- 為 VersionValue 建立索引
 
 -- 8. Modules 表 - 儲存受影響的模組資訊
@@ -87,10 +85,9 @@ CREATE TABLE Modules
 (
     ModuleId   INT PRIMARY KEY AUTO_INCREMENT, -- 主鍵，自增識別碼
     AffectedId INT,                            -- 受影響產品 ID
-    ModuleName VARCHAR(100)                    -- 模組名稱
+    ModuleName VARCHAR(1000)                    -- 模組名稱
 );
 CREATE INDEX IX_Modules_AffectedId ON Modules (AffectedId); -- 為 AffectedId 建立索引
-CREATE INDEX IX_Modules_ModuleName ON Modules (ModuleName);
 -- 為 ModuleName 建立索引
 
 -- 9. AdpContainer 表 - 儲存 ADP 的資訊
@@ -398,7 +395,7 @@ CREATE TABLE Credit
     CveId    VARCHAR(20),                    -- CVE 識別碼
     Language VARCHAR(10),                    -- 貢獻者描述語言
     Type     VARCHAR(50),                    -- 貢獻類型
-    Value    VARCHAR(255)                    -- 貢獻者資訊
+    Value    VARCHAR(500)                    -- 貢獻者資訊
 );
 CREATE INDEX IX_Credit_CnaId ON Credit (CnaId); -- 為 CnaId 建立索引
 CREATE INDEX IX_Credit_CveId ON Credit (CveId);
@@ -410,8 +407,8 @@ CREATE TABLE Reference
     ReferenceId INT PRIMARY KEY AUTO_INCREMENT, -- 主鍵，自增識別碼
     CnaId       INT,                            -- CNA 容器 ID
     CveId       VARCHAR(20),                    -- CVE 識別碼
-    Url         VARCHAR(255),                   -- 參考資料 URL
-    Name        VARCHAR(255)                    -- 參考資料名稱
+    Url         TEXT,                   -- 參考資料 URL
+    Name        TEXT                    -- 參考資料名稱
 );
 CREATE INDEX IX_Reference_CnaId ON Reference (CnaId); -- 為 CnaId 建立索引
 CREATE INDEX IX_Reference_CveId ON Reference (CveId);
@@ -422,7 +419,7 @@ CREATE TABLE ReferenceTags
 (
     ReferenceTagId INT PRIMARY KEY AUTO_INCREMENT, -- 主鍵，自增識別碼
     ReferenceId    INT,                            -- 參考資料 ID
-    Tag            VARCHAR(50)                     -- 標籤
+    Tag            TEXT                     -- 標籤
 );
 CREATE INDEX IX_ReferenceTags_ReferenceId ON ReferenceTags (ReferenceId);
 -- 為 ReferenceId 建立索引

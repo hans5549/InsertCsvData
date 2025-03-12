@@ -5,17 +5,22 @@ namespace InsertCsvData.Services.Database;
 
 public class SqlDatabaseService : IDatabaseService
 {
-    private readonly string _connectionString;
     private readonly CveDataInserter _cveDataInserter;
     private readonly CnaDataInserter _cnaDataInserter;
     private readonly AdpDataInserter _adpDataInserter;
 
-    public SqlDatabaseService(string connectionString)
+    public SqlDatabaseService(string connectionString, string dbType)
     {
-        _connectionString = connectionString;
-        _cveDataInserter = new CveDataInserter(_connectionString);
-        _cnaDataInserter = new CnaDataInserter(_connectionString);
-        _adpDataInserter = new AdpDataInserter(_connectionString);
+        IDbConnectionFactory connectionFactory = dbType.ToLower() switch
+        {
+            "sqlserver" => new SqlServerConnectionFactory(connectionString),
+            "mysql" => new MySqlConnectionFactory(connectionString),
+            _ => throw new ArgumentException("Unsupported database type")
+        };
+
+        _cveDataInserter = new CveDataInserter(connectionFactory);
+        _cnaDataInserter = new CnaDataInserter(connectionFactory);
+        _adpDataInserter = new AdpDataInserter(connectionFactory);
     }
 
     public void InsertCveData(Cve.RootCve cveData)
