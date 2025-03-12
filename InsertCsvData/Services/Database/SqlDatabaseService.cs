@@ -1,47 +1,63 @@
 using InsertCsvData.Interfaces;
 using InsertCsvData.Models;
+using System.Data;
 
 namespace InsertCsvData.Services.Database;
 
 public class SqlDatabaseService : IDatabaseService
 {
+    private readonly IDbConnectionFactory _connectionFactory; // 新增自己的 connectionFactory
     private readonly CveDataInserter _cveDataInserter;
     private readonly CnaDataInserter _cnaDataInserter;
     private readonly AdpDataInserter _adpDataInserter;
 
     public SqlDatabaseService(string connectionString, string dbType)
     {
-        IDbConnectionFactory connectionFactory = dbType.ToLower() switch
+        _connectionFactory = dbType.ToLower() switch
         {
             "sqlserver" => new SqlServerConnectionFactory(connectionString),
             "mysql" => new MySqlConnectionFactory(connectionString),
             _ => throw new ArgumentException("Unsupported database type")
         };
 
-        _cveDataInserter = new CveDataInserter(connectionFactory);
-        _cnaDataInserter = new CnaDataInserter(connectionFactory);
-        _adpDataInserter = new AdpDataInserter(connectionFactory);
+        _cveDataInserter = new CveDataInserter(_connectionFactory);
+        _cnaDataInserter = new CnaDataInserter(_connectionFactory);
+        _adpDataInserter = new AdpDataInserter(_connectionFactory);
     }
 
     public void InsertCveData(Cve.RootCve cveData)
     {
-        int cveMetadataId = _cveDataInserter.InsertCveMetadata(cveData.CveMetadata);
-        int rootCveId = _cveDataInserter.InsertRootCve(cveData, cveMetadataId);
+        using var connection = _connectionFactory.CreateConnection();
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
 
-        if (cveData.Containers == null) return;
-        int containersId = _cveDataInserter.InsertContainers(rootCveId);
-
-        if (cveData.Containers.Cna != null)
+        try
         {
-            int cnaId = _cnaDataInserter.InsertCnaContainer(cveData.Containers.Cna);
-            _cveDataInserter.UpdateContainersCnaId(containersId, cnaId);
-            _cnaDataInserter.InsertCnaRelatedData(cveData.Containers.Cna, cnaId);
+            int cveMetadataId = _cveDataInserter.InsertCveMetadata(cveData.CveMetadata, connection, transaction);
+            int rootCveId = _cveDataInserter.InsertRootCve(cveData, cveMetadataId, connection, transaction);
+
+            if (cveData.Containers == null) return;
+            int containersId = _cveDataInserter.InsertContainers(rootCveId, connection, transaction);
+
+            if (cveData.Containers.Cna != null)
+            {
+                int cnaId = _cnaDataInserter.InsertCnaContainer(cveData.Containers.Cna, connection, transaction);
+                _cveDataInserter.UpdateContainersCnaId(containersId, cnaId, connection, transaction);
+                _cnaDataInserter.InsertCnaRelatedData(cveData.Containers.Cna, cnaId, connection, transaction);
+            }
+
+            if (cveData.Containers.Adp is { Count: > 0 })
+            {
+                foreach (var adp in cveData.Containers.Adp)
+                    _adpDataInserter.InsertAdpContainer(adp, containersId, connection, transaction);
+            }
+
+            transaction.Commit();
         }
-
-        if (cveData.Containers.Adp is { Count: > 0 })
+        catch (Exception ex)
         {
-            foreach (var adp in cveData.Containers.Adp)
-                _adpDataInserter.InsertAdpContainer(adp, containersId);
+            transaction.Rollback();
+            throw new Exception("Failed to insert CVE data", ex);
         }
     }
 }

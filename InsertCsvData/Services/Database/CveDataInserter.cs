@@ -1,8 +1,6 @@
+using System.Data;
 using InsertCsvData.Interfaces;
 using InsertCsvData.Models;
-using System.Data;
-
-namespace InsertCsvData.Services.Database;
 
 public class CveDataInserter
 {
@@ -13,12 +11,9 @@ public class CveDataInserter
         _connectionFactory = connectionFactory;
     }
 
-    public int InsertCveMetadata(Cve.CveMetadata metadata)
+    public int InsertCveMetadata(Cve.CveMetadata metadata, IDbConnection connection, IDbTransaction transaction)
     {
         if (metadata == null) return -1;
-
-        using var connection = _connectionFactory.CreateConnection();
-        connection.Open();
 
         var sql = $@"
             INSERT INTO CveMetadata (CveId, AssignerOrgId, AssignerShortName, State, DateReserved, DatePublished, DateUpdated)
@@ -27,6 +22,7 @@ public class CveDataInserter
 
         using var command = connection.CreateCommand();
         command.CommandText = sql;
+        command.Transaction = transaction;
         command.Parameters.Add(CreateParameter(command, "@CveId", (object)metadata.CveId ?? DBNull.Value));
         command.Parameters.Add(CreateParameter(command, "@AssignerOrgId", (object)metadata.AssignerOrgId ?? DBNull.Value));
         command.Parameters.Add(CreateParameter(command, "@AssignerShortName", (object)metadata.AssignerShortName ?? DBNull.Value));
@@ -38,11 +34,8 @@ public class CveDataInserter
         return Convert.ToInt32(command.ExecuteScalar());
     }
 
-    public int InsertRootCve(Cve.RootCve cveData, int cveMetadataId)
+    public int InsertRootCve(Cve.RootCve cveData, int cveMetadataId, IDbConnection connection, IDbTransaction transaction)
     {
-        using var connection = _connectionFactory.CreateConnection();
-        connection.Open();
-
         var sql = $@"
             INSERT INTO RootCve (DataType, DataVersion, CveMetadataId)
             VALUES (@DataType, @DataVersion, @CveMetadataId);
@@ -50,6 +43,7 @@ public class CveDataInserter
 
         using var command = connection.CreateCommand();
         command.CommandText = sql;
+        command.Transaction = transaction;
         command.Parameters.Add(CreateParameter(command, "@DataType", (object)cveData.DataType ?? DBNull.Value));
         command.Parameters.Add(CreateParameter(command, "@DataVersion", (object)cveData.DataVersion ?? DBNull.Value));
         command.Parameters.Add(CreateParameter(command, "@CveMetadataId", cveMetadataId));
@@ -57,11 +51,8 @@ public class CveDataInserter
         return Convert.ToInt32(command.ExecuteScalar());
     }
 
-    public int InsertContainers(int rootCveId)
+    public int InsertContainers(int rootCveId, IDbConnection connection, IDbTransaction transaction)
     {
-        using var connection = _connectionFactory.CreateConnection();
-        connection.Open();
-
         var sql = $@"
             INSERT INTO Containers (RootCveId)
             VALUES (@RootCveId);
@@ -69,18 +60,17 @@ public class CveDataInserter
 
         using var command = connection.CreateCommand();
         command.CommandText = sql;
+        command.Transaction = transaction;
         command.Parameters.Add(CreateParameter(command, "@RootCveId", rootCveId));
         return Convert.ToInt32(command.ExecuteScalar());
     }
 
-    public void UpdateContainersCnaId(int containersId, int cnaId)
+    public void UpdateContainersCnaId(int containersId, int cnaId, IDbConnection connection, IDbTransaction transaction)
     {
-        using var connection = _connectionFactory.CreateConnection();
-        connection.Open();
-
         var sql = "UPDATE Containers SET CnaId = @CnaId WHERE ContainersId = @ContainersId;";
         using var command = connection.CreateCommand();
         command.CommandText = sql;
+        command.Transaction = transaction;
         command.Parameters.Add(CreateParameter(command, "@CnaId", cnaId));
         command.Parameters.Add(CreateParameter(command, "@ContainersId", containersId));
         command.ExecuteNonQuery();

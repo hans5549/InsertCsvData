@@ -13,12 +13,9 @@ public class AdpDataInserter
         _connectionFactory = connectionFactory;
     }
 
-    public void InsertAdpContainer(Cve.AdpContainer adp, int containersId)
+    public void InsertAdpContainer(Cve.AdpContainer adp, int containersId, IDbConnection connection, IDbTransaction transaction)
     {
-        using var connection = _connectionFactory.CreateConnection();
-        connection.Open();
-
-        var providerMetadataId = InsertProviderMetadata(adp.ProviderMetadata, connection);
+        var providerMetadataId = InsertProviderMetadata(adp.ProviderMetadata, connection, transaction);
 
         var sql = $@"
             INSERT INTO AdpContainer (ContainersId, Title, ProviderMetadataId)
@@ -27,6 +24,7 @@ public class AdpDataInserter
 
         using var command = connection.CreateCommand();
         command.CommandText = sql;
+        command.Transaction = transaction;
         command.Parameters.Add(CreateParameter(command, "@ContainersId", containersId));
         command.Parameters.Add(CreateParameter(command, "@Title", (object)adp.Title ?? DBNull.Value));
         command.Parameters.Add(CreateParameter(command, "@ProviderMetadataId", providerMetadataId));
@@ -34,10 +32,10 @@ public class AdpDataInserter
 
         if (adp.Metrics != null)
             foreach (var metric in adp.Metrics)
-                InsertAdpMetric(metric, adpId, connection);
+                InsertAdpMetric(metric, adpId, connection, transaction);
     }
 
-    private int InsertProviderMetadata(Cve.ProviderMetadata metadata, IDbConnection connection)
+    private int InsertProviderMetadata(Cve.ProviderMetadata metadata, IDbConnection connection, IDbTransaction transaction)
     {
         if (metadata == null) return -1;
 
@@ -48,13 +46,14 @@ public class AdpDataInserter
 
         using var command = connection.CreateCommand();
         command.CommandText = sql;
+        command.Transaction = transaction;
         command.Parameters.Add(CreateParameter(command, "@OrgId", (object)metadata.OrgId ?? DBNull.Value));
         command.Parameters.Add(CreateParameter(command, "@ShortName", (object)metadata.ShortName ?? DBNull.Value));
         command.Parameters.Add(CreateParameter(command, "@DateUpdated", (object)metadata.DateUpdated ?? DBNull.Value));
         return Convert.ToInt32(command.ExecuteScalar());
     }
 
-    private void InsertAdpMetric(Cve.AdpMetric metric, int adpId, IDbConnection connection)
+    private void InsertAdpMetric(Cve.AdpMetric metric, int adpId, IDbConnection connection, IDbTransaction transaction)
     {
         var sql = $@"
             INSERT INTO AdpMetric (AdpId)
@@ -63,13 +62,14 @@ public class AdpDataInserter
 
         using var command = connection.CreateCommand();
         command.CommandText = sql;
+        command.Transaction = transaction;
         command.Parameters.Add(CreateParameter(command, "@AdpId", adpId));
         int adpMetricId = Convert.ToInt32(command.ExecuteScalar());
 
-        if (metric.Other != null) InsertSsvc(metric.Other, adpMetricId, connection);
+        if (metric.Other != null) InsertSsvc(metric.Other, adpMetricId, connection, transaction);
     }
 
-    private void InsertSsvc(Cve.Ssvc ssvc, int adpMetricId, IDbConnection connection)
+    private void InsertSsvc(Cve.Ssvc ssvc, int adpMetricId, IDbConnection connection, IDbTransaction transaction)
     {
         var sql = $@"
             INSERT INTO Ssvc (AdpMetricId, Type)
@@ -78,14 +78,15 @@ public class AdpDataInserter
 
         using var command = connection.CreateCommand();
         command.CommandText = sql;
+        command.Transaction = transaction;
         command.Parameters.Add(CreateParameter(command, "@AdpMetricId", adpMetricId));
         command.Parameters.Add(CreateParameter(command, "@Type", (object)ssvc.Type ?? DBNull.Value));
         int ssvcId = Convert.ToInt32(command.ExecuteScalar());
 
-        if (ssvc.Content != null) InsertSsvcContent(ssvc.Content, ssvcId, connection);
+        if (ssvc.Content != null) InsertSsvcContent(ssvc.Content, ssvcId, connection, transaction);
     }
 
-    private void InsertSsvcContent(Cve.SsvcContent content, int ssvcId, IDbConnection connection)
+    private void InsertSsvcContent(Cve.SsvcContent content, int ssvcId, IDbConnection connection, IDbTransaction transaction)
     {
         var sql = $@"
             INSERT INTO SsvcContent (SsvcId, Id, Timestamp, Role, Version)
@@ -94,6 +95,7 @@ public class AdpDataInserter
 
         using var command = connection.CreateCommand();
         command.CommandText = sql;
+        command.Transaction = transaction;
         command.Parameters.Add(CreateParameter(command, "@SsvcId", ssvcId));
         command.Parameters.Add(CreateParameter(command, "@Id", (object)content.Id ?? DBNull.Value));
         command.Parameters.Add(CreateParameter(command, "@Timestamp", content.Timestamp));
@@ -103,10 +105,10 @@ public class AdpDataInserter
 
         if (content.Options != null)
             foreach (var option in content.Options)
-                InsertSsvcOption(option, ssvcContentId, connection);
+                InsertSsvcOption(option, ssvcContentId, connection, transaction);
     }
 
-    private void InsertSsvcOption(Cve.SsvcOption option, int ssvcContentId, IDbConnection connection)
+    private void InsertSsvcOption(Cve.SsvcOption option, int ssvcContentId, IDbConnection connection, IDbTransaction transaction)
     {
         var sql = @"
             INSERT INTO SsvcOption (SsvcContentId, Exploitation, Automatable, TechnicalImpact)
@@ -114,6 +116,7 @@ public class AdpDataInserter
 
         using var command = connection.CreateCommand();
         command.CommandText = sql;
+        command.Transaction = transaction;
         command.Parameters.Add(CreateParameter(command, "@SsvcContentId", ssvcContentId));
         command.Parameters.Add(CreateParameter(command, "@Exploitation", (object)option.Exploitation ?? DBNull.Value));
         command.Parameters.Add(CreateParameter(command, "@Automatable", (object)option.Automatable ?? DBNull.Value));
