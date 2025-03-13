@@ -19,7 +19,7 @@ internal static class Program
         var userProfilePath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var cvePath = configuration["FilePaths:CvePath"];
         var failurePath = configuration["FilePaths:FailurePath"];
-        var connectionString = configuration["ConnectionStrings:MySqlConnection"];
+        var connectionString = configuration["ConnectionStrings:SqlConnection"];
         var dbType = configuration["Database:DbType"]; // 新增：從配置中讀取資料庫類型
 
         // 驗證配置是否完整
